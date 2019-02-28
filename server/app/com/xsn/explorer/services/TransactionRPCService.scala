@@ -1,12 +1,14 @@
 package com.xsn.explorer.services
 
 import com.alexitc.playsonify.core.FutureOr.Implicits.{FutureListOps, FutureOps, OrOps}
-import com.alexitc.playsonify.core.{FutureApplicationResult, FutureOr}
+import com.alexitc.playsonify.core.{ApplicationResult, FutureApplicationResult, FutureOr}
+import com.alexitc.playsonify.models.ApplicationError
 import com.xsn.explorer.errors.{InvalidRawTransactionError, TransactionFormatError, TransactionNotFoundError, XSNWorkQueueDepthExceeded}
 import com.xsn.explorer.models.persisted.Transaction
 import com.xsn.explorer.models.rpc.TransactionVIN
 import com.xsn.explorer.models.values._
 import com.xsn.explorer.models.{TransactionDetails, TransactionValue}
+import com.xsn.explorer.services.TransactionRPCService.{FutureListOpsNew, ListFutureOpsNew}
 import com.xsn.explorer.util.Extensions.FutureOrExt
 import javax.inject.Inject
 import org.scalactic.{Bad, Good, One, Or}
@@ -83,6 +85,7 @@ class TransactionRPCService @Inject() (
 
     list
         .map(getVIN)
+        .ignoring(TransactionNotFoundError)
         .toFutureOr
         .toFuture
         .recoverWith {
@@ -105,6 +108,7 @@ class TransactionRPCService @Inject() (
 
     ids
         .map(getTransaction)
+        .ignoring(TransactionNotFoundError)
         .toFutureOr
         .recoverWith(XSNWorkQueueDepthExceeded) {
           logger.warn("Unable to load transaction due to server overload, loading them slowly")
@@ -153,5 +157,44 @@ class TransactionRPCService @Inject() (
 
           result.toFuture
         }
+  }
+}
+
+object TransactionRPCService {
+  implicit class ListFutureOpsNew[+A](val inner: List[FutureApplicationResult[A]]) extends AnyVal {
+    def ignoring(ignoredError: ApplicationError)(implicit ec: ExecutionContext): Future[List[ApplicationResult[A]]] = {
+      val futureList = Future.sequence(inner)
+
+      val future = futureList.map { resultList =>
+        resultList
+            .flatMap {
+              case Good(x) => Option(Good(x))
+              case Bad(One(e)) if e == ignoredError => None
+              case Bad(e) => Option(Bad(e))
+            }
+      }
+
+      future
+    }
+  }
+
+  implicit class FutureListOpsNew[+A](val inner: Future[List[ApplicationResult[A]]]) {
+    def toFutureOr(implicit ec: ExecutionContext): FutureOr[List[A]] = {
+      val future = inner.map { resultList =>
+        val errorsMaybe = resultList
+            .flatMap(_.swap.toOption)
+            .reduceLeftOption(_ ++ _)
+            .map(_.distinct)
+
+        errorsMaybe
+            .map(Bad(_))
+            .getOrElse {
+              val valueList = resultList.flatMap(_.toOption)
+              Good(valueList)
+            }
+      }
+
+      new FutureOr(future)
+    }
   }
 }
