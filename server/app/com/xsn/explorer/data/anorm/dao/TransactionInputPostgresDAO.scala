@@ -41,11 +41,13 @@ class TransactionInputPostgresDAO {
           params.tail: _*
         )
 
-        val success = batch.execute().forall(_ == 1)
+        val result = batch.execute()
+        val success = result.forall(_ == 1)
         if (success) {
           Some(inputs)
         } else {
-          None
+          logger.warn(s"Failed to insert some inputs, ignoring ${result.count(_ != 1)}")
+          Some(inputs)
         }
     }
   }

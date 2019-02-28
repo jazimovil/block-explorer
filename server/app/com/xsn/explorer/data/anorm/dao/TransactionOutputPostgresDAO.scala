@@ -124,7 +124,8 @@ class TransactionOutputPostgresDAO {
         if (result == inputs.size) {
           Option(())
         } else {
-          None
+          logger.warn(s"Unable to spent ${inputs.size - result} outputs, txid = $txid")
+          Option(())
         }
     }
   }

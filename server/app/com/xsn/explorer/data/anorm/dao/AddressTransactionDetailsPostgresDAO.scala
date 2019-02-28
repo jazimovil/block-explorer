@@ -6,8 +6,11 @@ import anorm._
 import com.xsn.explorer.data.anorm.parsers.TransactionParsers._
 import com.xsn.explorer.models.persisted.{AddressTransactionDetails, Transaction}
 import com.xsn.explorer.models.values.TransactionId
+import org.slf4j.LoggerFactory
 
 class AddressTransactionDetailsPostgresDAO {
+
+  private val logger = LoggerFactory.getLogger(this.getClass)
 
   def batchInsertDetails(transaction: Transaction.HasIO)(implicit conn: Connection): Option[Unit] = {
     val received = transaction
@@ -58,12 +61,14 @@ class AddressTransactionDetailsPostgresDAO {
           params.tail: _*
         )
 
-        val success = batch.execute().forall(_ == 1)
+        val result = batch.execute()
+        val success = result.forall(_ == 1)
 
         if (success) {
           Some(())
         } else {
-          None
+          logger.warn(s"Unable to insert details for ${result.count(_ != 1)}, ignoring")
+          Some(())
         }
     }
   }
