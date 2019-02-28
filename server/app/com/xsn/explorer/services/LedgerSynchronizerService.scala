@@ -161,7 +161,14 @@ class LedgerSynchronizerService @Inject() (
       rpcBlock <- xsnService.getBlock(blockhash).toFutureOr
       extractionMethod <- blockService.extractionMethod(rpcBlock).toFutureOr
       transactions <- transactionRPCService.getTransactions(rpcBlock.transactions).toFutureOr
-    } yield toPersistedBlock(rpcBlock, extractionMethod).withTransactions(transactions)
+      filteredTransactions = transactions.filter(_.blockhash == blockhash)
+    } yield {
+      if (transactions.size != filteredTransactions.size) {
+        // see https://github.com/bitpay/insight-api/issues/42
+        logger.warn(s"The block = $blockhash has phantom ${transactions.size - filteredTransactions.size} transactions, they are being discarded")
+      }
+      toPersistedBlock(rpcBlock, extractionMethod).withTransactions(filteredTransactions)
+    }
 
     result.toFuture
   }
