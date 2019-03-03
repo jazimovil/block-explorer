@@ -8,9 +8,9 @@ import play.api.db.Database
 trait DataHandlerObjects {
 
   lazy val fieldOrderingSQLInterpreter = new FieldOrderingSQLInterpreter
-  lazy val transactionInputDAO = new TransactionInputPostgresDAO
-  lazy val transactionOutputDAO = new TransactionOutputPostgresDAO
-  lazy val addressTransactionDetailsDAO = new AddressTransactionDetailsPostgresDAO
+  lazy val transactionInputDAO = new TransactionInputPostgresDAO(Config.explorerConfig)
+  lazy val transactionOutputDAO = new TransactionOutputPostgresDAO(Config.explorerConfig)
+  lazy val addressTransactionDetailsDAO = new AddressTransactionDetailsPostgresDAO(Config.explorerConfig)
   lazy val transactionPostgresDAO = new TransactionPostgresDAO(
     transactionInputDAO,
     transactionOutputDAO,

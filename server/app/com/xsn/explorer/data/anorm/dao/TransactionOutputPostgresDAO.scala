@@ -3,12 +3,14 @@ package com.xsn.explorer.data.anorm.dao
 import java.sql.Connection
 
 import anorm._
+import com.xsn.explorer.config.ExplorerConfig
 import com.xsn.explorer.data.anorm.parsers.TransactionParsers._
 import com.xsn.explorer.models.persisted.Transaction
 import com.xsn.explorer.models.values.{Address, TransactionId}
+import javax.inject.Inject
 import org.slf4j.LoggerFactory
 
-class TransactionOutputPostgresDAO {
+class TransactionOutputPostgresDAO @Inject() (explorerConfig: ExplorerConfig) {
 
   private val logger = LoggerFactory.getLogger(this.getClass)
 
@@ -56,9 +58,11 @@ class TransactionOutputPostgresDAO {
         )
 
         val success = batch.execute().forall(_ == 1)
-        if (success) {
+        if (success ||
+            explorerConfig.liteVersionConfig.enabled) {
+
           Some(outputs)
-        } else {
+        } else{
           None
         }
     }
@@ -121,11 +125,12 @@ class TransactionOutputPostgresDAO {
         """.stripMargin
         ).executeUpdate()
 
-        if (result == inputs.size) {
+        if (result == inputs.size ||
+            explorerConfig.liteVersionConfig.enabled) {
+
           Option(())
         } else {
-          logger.warn(s"Unable to spent ${inputs.size - result} outputs, txid = $txid")
-          Option(())
+          None
         }
     }
   }

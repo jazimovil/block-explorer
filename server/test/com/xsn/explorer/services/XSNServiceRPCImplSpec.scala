@@ -3,7 +3,6 @@ package com.xsn.explorer.services
 import com.xsn.explorer.config.{ExplorerConfig, RPCConfig}
 import com.xsn.explorer.errors._
 import com.xsn.explorer.helpers.{BlockLoader, DataHelper, Executors, TransactionLoader}
-import com.xsn.explorer.models._
 import com.xsn.explorer.models.rpc.Masternode
 import com.xsn.explorer.models.values._
 import org.mockito.ArgumentMatchers._
@@ -33,6 +32,8 @@ class XSNServiceRPCImplSpec extends WordSpec with MustMatchers with ScalaFutures
 
   val explorerConfig = new ExplorerConfig {
     override def genesisBlock: Blockhash = Blockhash.from("00000c822abdbb23e28f79a49d29b41429737c6c7e15df40d1b1f1b35907ae34").get
+
+    override def liteVersionConfig: ExplorerConfig.LiteVersionConfig = ???
   }
 
   val request = mock[WSRequest]

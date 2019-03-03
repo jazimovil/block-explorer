@@ -223,6 +223,7 @@ class LedgerSynchronizerServiceSpec extends PostgresDataHandlerSpec with BeforeA
       new TransactionLogic)
     val transactionRPCService = new TransactionRPCService(xsnService)
     new LedgerSynchronizerService(
+      Config.explorerConfig,
       xsnService,
       transactionService,
       transactionRPCService,

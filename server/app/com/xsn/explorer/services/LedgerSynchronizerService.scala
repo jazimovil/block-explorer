@@ -2,9 +2,11 @@ package com.xsn.explorer.services
 
 import com.alexitc.playsonify.core.FutureApplicationResult
 import com.alexitc.playsonify.core.FutureOr.Implicits.{FutureOps, OptionOps}
+import com.xsn.explorer.config.ExplorerConfig
 import com.xsn.explorer.data.async.{BlockFutureDataHandler, LedgerFutureDataHandler}
 import com.xsn.explorer.errors.BlockNotFoundError
 import com.xsn.explorer.models.persisted.Block
+import com.xsn.explorer.models.rpc
 import com.xsn.explorer.models.transformers._
 import com.xsn.explorer.models.values.{Blockhash, Height}
 import com.xsn.explorer.util.Extensions.FutureOrExt
@@ -15,6 +17,7 @@ import org.slf4j.LoggerFactory
 import scala.concurrent.{ExecutionContext, Future}
 
 class LedgerSynchronizerService @Inject() (
+    explorerConfig: ExplorerConfig,
     xsnService: XSNService,
     transactionService: TransactionService,
     transactionRPCService: TransactionRPCService,
@@ -34,7 +37,7 @@ class LedgerSynchronizerService @Inject() (
    */
   def synchronize(blockhash: Blockhash): FutureApplicationResult[Unit] = {
     val result = for {
-      block <- getRPCBlock(blockhash).toFutureOr
+      block <- getRPCBlockWithTransactions(blockhash).toFutureOr
       _ <- synchronize(block).toFutureOr
     } yield ()
 
@@ -98,7 +101,7 @@ class LedgerSynchronizerService @Inject() (
       logger.info(s"Reorganization to push block ${newBlock.height}, hash = ${newBlock.hash}")
       val result = for {
         blockhash <- newBlock.previousBlockhash.toFutureOr(BlockNotFoundError)
-        previousBlock <- getRPCBlock(blockhash).toFutureOr
+        previousBlock <- getRPCBlockWithTransactions(blockhash).toFutureOr
         _ <- synchronize(previousBlock).toFutureOr
         _ <- synchronize(newBlock).toFutureOr
       } yield ()
@@ -148,7 +151,7 @@ class LedgerSynchronizerService @Inject() (
       val result = for {
         _ <- previous.toFutureOr
         blockhash <- xsnService.getBlockhash(Height(height)).toFutureOr
-        block <- getRPCBlock(blockhash).toFutureOr
+        block <- getRPCBlockWithTransactions(blockhash).toFutureOr
         _ <- synchronize(block).toFutureOr
       } yield ()
 
@@ -156,9 +159,9 @@ class LedgerSynchronizerService @Inject() (
     }
   }
 
-  private def getRPCBlock(blockhash: Blockhash): FutureApplicationResult[Block.HasTransactions] = {
+  private def getRPCBlockWithTransactions(blockhash: Blockhash): FutureApplicationResult[Block.HasTransactions] = {
     val result = for {
-      rpcBlock <- xsnService.getBlock(blockhash).toFutureOr
+      rpcBlock <- getRPCBlock(blockhash).toFutureOr
       extractionMethod <- blockService.extractionMethod(rpcBlock).toFutureOr
       transactions <- transactionRPCService.getTransactions(rpcBlock.transactions).toFutureOr
       filteredTransactions = transactions.filter(_.blockhash == blockhash)
@@ -168,6 +171,23 @@ class LedgerSynchronizerService @Inject() (
         logger.warn(s"The block = $blockhash has phantom ${transactions.size - filteredTransactions.size} transactions, they are being discarded")
       }
       toPersistedBlock(rpcBlock, extractionMethod).withTransactions(filteredTransactions)
+    }
+
+    result.toFuture
+  }
+
+  private def getRPCBlock(blockhash: Blockhash): FutureApplicationResult[rpc.Block] = {
+    val result = for {
+      rpcBlock <- xsnService.getBlock(blockhash).toFutureOr
+    } yield {
+      if (explorerConfig.liteVersionConfig.enabled &&
+          rpcBlock.height.int < explorerConfig.liteVersionConfig.syncTransactionsFromBlock) {
+
+        // lite version, ignore transactions
+        rpcBlock.copy(transactions = List.empty)
+      } else {
+        rpcBlock
+      }
     }
 
     result.toFuture
