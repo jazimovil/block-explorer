@@ -48,6 +48,7 @@ import { BlockComponent } from './components/block/block.component';
 import { BlockRawComponent } from './components/block-raw/block-raw.component';
 import { ExplorerDatetimePipe } from './pipes/explorer-datetime.pipe';
 import { ExplorerCurrencyPipe } from './pipes/explorer-currency.pipe';
+import { ExcaliburConnectComponent } from './components/excalibur-connect/excalibur-connect.component';
 
 @NgModule({
   declarations: [
@@ -69,7 +70,8 @@ import { ExplorerCurrencyPipe } from './pipes/explorer-currency.pipe';
     BlockComponent,
     BlockRawComponent,
     ExplorerDatetimePipe,
-    ExplorerCurrencyPipe
+    ExplorerCurrencyPipe,
+    ExcaliburConnectComponent
   ],
   imports: [
     AppRoutingModule,
