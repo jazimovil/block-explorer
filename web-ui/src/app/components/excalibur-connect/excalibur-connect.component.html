@@ -1,3 +1,32 @@
-<p>
-  excalibur-connect works!
-</p>
+<div class="wrapper">
+
+  <label class="begin">Bitcoin address list</label>
+  <div class="begin">
+    <tabset>
+      <tab heading="Receive">
+        <ul id="addressList">
+          <li *ngFor="let address of addresses; let i = index">
+            <label>Address #{{i + 1}}:</label>
+            <p>{{address.hexAddress}}</p>
+            <p>{{address.pathAddress}}</p>
+          </li>
+        </ul>
+      </tab>
+      <tab heading="Send">
+        Address:<br>
+        <input type="text"><br>
+        Amount:<br>
+        <input type="number" min="0"><br>
+        Fee:<br>
+        <select [(ngModel)]='selectedFee'>
+          <option value="high">High</option>
+          <option value="normal" selected>Normal</option>
+          <option value="low">Low</option>
+        </select>
+        {{ getFeeAmount(selectedFee) }} Shatoshis
+      </tab>
+    </tabset>
+    <br>
+    <input type="button" value="Add" (click)="getAddress()">
+  </div>
+</div>
