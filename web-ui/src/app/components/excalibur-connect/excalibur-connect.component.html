@@ -11,22 +11,26 @@
             <p>{{address.pathAddress}}</p>
           </li>
         </ul>
+        <input type="button" value="Add" (click)="getAddress()">
       </tab>
       <tab heading="Send">
-        Address:<br>
-        <input type="text"><br>
+        Origin address<br>
+        <input [(ngModel)]='originAddress' type="text"><br>
+        <br>
+        Destiny address:<br>
+        <input [(ngModel)]='destinyAddress' type="text"><br>
         Amount:<br>
-        <input type="number" min="0"><br>
+        <input [(ngModel)]='amountSatoshi' type="number" min="0"><br>
         Fee:<br>
         <select [(ngModel)]='selectedFee'>
           <option value="high">High</option>
           <option value="normal" selected>Normal</option>
           <option value="low">Low</option>
         </select>
-        {{ getFeeAmount(selectedFee) }} Shatoshis
+        {{ getFeeAmount() }} Shatoshis<br><br>
+        <input type="button" value="New Tx" (click)="signTransaction()">
       </tab>
     </tabset>
     <br>
-    <input type="button" value="Add" (click)="getAddress()">
   </div>
 </div>

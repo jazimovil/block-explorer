@@ -7,7 +7,7 @@ import { environment } from '../../environments/environment';
 import { Balance } from '../models/balance';
 import { PaginatedResult } from '../models/paginated-result';
 import { LightWalletTransaction } from '../models/light-wallet-transaction';
-import { Transaction } from '../models/transaction';
+import { Transaction, TransactionValue } from '../models/transaction';
 import { WrappedResult } from '../models/wrapped-result';
 
 const httpOptions = {
@@ -45,4 +45,10 @@ export class AddressesService {
 
     return this.http.get<WrappedResult<LightWalletTransaction>>(url);
   }
+
+  // TRYING TO GET UTXOS
+  // getUtxos(address) {
+  //   const url = `${this.baseUrl}/${address}/utxos`;
+  //   return this.http.get<[TransactionValue]>(url);
+  // }
 }
