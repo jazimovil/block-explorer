@@ -1,6 +1,7 @@
 import { Component, OnInit } from '@angular/core';
-import TrezorConnect from 'trezor-connect';
-// import { AddressesService } from '../../services/addresses.service';
+// import TrezorConnect from 'trezor-connect';
+import * as TrezorConnect from './trezor-connect';
+import { AddressesService } from '../../services/addresses.service';
 
 @Component({
   selector: 'app-excalibur-connect',
@@ -14,9 +15,10 @@ export class ExcaliburConnectComponent implements OnInit {
   originAddress = '';
   destinyAddress = '';
   amountSatoshi = '';
-  // addressesServiceSpy: jasmine.SpyObj<AddressesService> = jasmine.createSpyObj('AddressesService', ['get']);
 
-  constructor() { }
+  constructor(
+    private addressesService: AddressesService
+  ) { }
 
   ngOnInit() {
     this.addresses = Array<Object>();
@@ -27,8 +29,10 @@ export class ExcaliburConnectComponent implements OnInit {
   }
 
   async getTrezorAddress(path: string) {
-    const result = await TrezorConnect.getAddress({path: path, coin: 'bitcoin', showOnTrezor: false});
-    // const result = await TrezorConnect.getAddress({path: "m/44'/5'/0'/0/1", coin: "DASH", showOnTrezor: false}); DASH Example
+    const result = await TrezorConnect.getAddress({path: path, coin: 'XSN', showOnTrezor: false});
+    // const result = await TrezorConnect.getAddress({path: "m/44'/5'/0'/0/1", coin: "DASH", showOnTrezor: false});
+    console.log('result');
+    console.log(result);
     return result;
   }
 
@@ -43,45 +47,37 @@ export class ExcaliburConnectComponent implements OnInit {
   }
 
   async signTrezorTransaction(params) {
+    console.log('sign trezor tx:');
+    console.log(params);
+    // return new Promise((succ, fail) => {
+    //   succ('Testing');
+    // });
     const result = await TrezorConnect.signTransaction(params);
     return result;
   }
 
-  private getUTXOs(address) {
-    // TEMPORAL fixed answer
-    return [
-      {
-        txid: 'c14246639ff54b2bc626c6ee9063599ed0966e296036bb17522a6c00ffcbd688',
-        outputIndex: 0,
-        satoshis: 498998333
-      }
-    ];
-
-    //https://xsnexplorer.io/api/addresses/XfoZ6Dh8i5SYagpYDNi358kzF1wZowJzyD/utxos
-
-    // working on get values from server
-    // const x = this.addressesServiceSpy.getUtxos(address);
-    // return x;
-  }
-
-  private generateInputs(address, requiredAmount) {
-
+  private async generateInputs(address, requiredAmount) {
+    console.log(`generate inputs: ${ address } and ${ requiredAmount }`);
     const inputs = [];
     let change = 0;
 
-    const listUTXOs = this.getUTXOs(address);
-
-    listUTXOs.forEach((utxo) => {
-      if (requiredAmount > 0) {
-        inputs.push({
-          prev_hash: utxo.txid,
-          prev_index: utxo.outputIndex
+    await this.addressesService.getUtxos(address).subscribe(
+      response => {
+        response.forEach((utxo) => {
+          if (requiredAmount > 0) {
+            inputs.push({
+              prev_hash: utxo.txid,
+              prev_index: utxo.outputIndex
+            });
+            change = utxo.satoshis - requiredAmount;
+            requiredAmount -= utxo.satoshis;
+          }
         });
-        change = utxo.satoshis - requiredAmount;
-        requiredAmount -= utxo.satoshis;
       }
-    });
-
+    );
+    console.log('return:');
+    console.log(inputs);
+    console.log(change);
     return {
       inputs: inputs,
       change: change
@@ -96,12 +92,14 @@ export class ExcaliburConnectComponent implements OnInit {
    * prev_index: 0
    *
    * OUTPUT
-   * address: 1JYb731DDFgTBgwcoXVzf8AWsfrBcd9Lsy
+   * address bitcoin: 1JYb731DDFgTBgwcoXVzf8AWsfrBcd9Lsy
+   * address XSN: XfoZ6Dh8i5SYagpYDNi358kzF1wZowJzyD
    * satoshis: 490000000 (4.9 XSN)
    */
 
-  signTransaction() {
-    const generatedInputs = this.generateInputs(this.originAddress, this.amountSatoshi + this.getFeeAmount());
+  async signTransaction() {
+    const generatedInputs = await this.generateInputs(this.originAddress, this.amountSatoshi + this.getFeeAmount());
+
     const outputs = [
       {
         address: this.destinyAddress,
@@ -109,6 +107,7 @@ export class ExcaliburConnectComponent implements OnInit {
         script_type: 'PAYTOADDRESS'
       }
     ];
+
     if (generatedInputs.change > 0) {
       outputs.push({
         address: this.originAddress,
@@ -119,8 +118,9 @@ export class ExcaliburConnectComponent implements OnInit {
 
     this.signTrezorTransaction({
       inputs: generatedInputs.inputs,
+      // inputs: [{prev_hash: 'c14246639ff54b2bc626c6ee9063599ed0966e296036bb17522a6c00ffcbd688', prev_index: 0}],
       outputs: outputs,
-      coin: 'bitcoin'
+      coin: 'stakenet'
     }).then((result) => {
       console.log(result);
     });
