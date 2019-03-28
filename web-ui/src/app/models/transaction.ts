@@ -22,4 +22,5 @@ export class UTXO {
   txid: string;
   outputIndex: number;
   address: string;
+  script: string;
 }
