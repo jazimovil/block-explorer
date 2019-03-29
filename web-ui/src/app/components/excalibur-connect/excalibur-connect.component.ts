@@ -10,7 +10,7 @@ import { TransactionsService } from '../../services/transactions.service';
 })
 export class ExcaliburConnectComponent implements OnInit {
 
-  addresses: Array<Object>;
+  addresses: Array<{ hexAddress: string, pathAddress: string }>;
   selectedFee = 'normal';
   originAddress = '';
   destinyAddress = '';
@@ -22,20 +22,11 @@ export class ExcaliburConnectComponent implements OnInit {
   ) { }
 
   ngOnInit() {
-    this.addresses = Array<Object>();
+    this.addresses = [{ hexAddress: 'XfoZ6Dh8i5SYagpYDNi358kzF1wZowJzyD', pathAddress: 'm/44\'/0\'/0\'/0/3' }];
     TrezorConnect.manifest({
       email: 'developer@xyz.com',
       appUrl: 'http://your.application.com'
     });
-  }
-
-  async getTrezorAddress(path: string) {
-    console.log(path);
-    const result = await TrezorConnect.getAddress({path: path, coin: 'Stakenet', showOnTrezor: false});
-    // const result = await TrezorConnect.getAddress({path: "m/44'/5'/0'/0/1", coin: "DASH", showOnTrezor: false});
-    console.log('result');
-    console.log(result);
-    return result;
   }
 
   getAddress() {
@@ -48,55 +39,78 @@ export class ExcaliburConnectComponent implements OnInit {
     });
   }
 
-  async signTrezorTransaction(params) {
-    console.log('sending...');
-    console.log(params);
-    return new Promise((succ, fail) => {
-      succ('Testing');
-    });
-    const result = await TrezorConnect.signTransaction(params);
-    return result;
-  }
+  /**
+   * XSN path [ 44, 0, 0, 0, 3 ]
+   * from: XfoZ6Dh8i5SYagpYDNi358kzF1wZowJzyD (Has 1.19999500 XSN)
+   * to: XyCiCasy7P4MHtQUknonBTiShBE45Gbbob (Has 1.1 XSN)
+   * sending: 002000000 (0.02 XSN)
+   */
 
-  private async generateInputs(address, requiredAmount, callback) {
-    const inputs = [];
-    let change = 0;
+  async signTransaction() {
+    this.generateInputs(this.originAddress, this.amountSatoshi + this.getFeeAmount(), (generatedInputs) => {
 
-    await this.addressesService.getUtxos(address).subscribe(
-      response => {
-        response.forEach((utxo) => {
-          if (requiredAmount > 0) {
-            inputs.push({
-              prev_hash: utxo.txid,
-              prev_index: utxo.outputIndex,
-              amount: utxo.satoshis.toString(),
-              script_type: 'SPENDADDRESS'
-            });
-            change = utxo.satoshis - requiredAmount;
-            requiredAmount -= utxo.satoshis;
-          }
+      const outputs = [{
+        address: this.destinyAddress,
+        amount: this.amountSatoshi.toString(),
+        script_type: 'PAYTO' + this.typeOfAddress(this.destinyAddress)
+      }];
+
+      if (generatedInputs.change > 0) {
+        outputs.push({
+          address: this.originAddress,
+          amount: generatedInputs.change.toString(),
+          script_type: 'PAYTO' + this.typeOfAddress(this.originAddress)
         });
-
-        callback(
-          {
-            inputs: inputs,
-            change: change
-          }
-        );
       }
-    );
+
+      const hashTransactions = generatedInputs.inputs.map((x) => {
+        return x.prev_hash;
+      });
+      this.generateRefTxs(hashTransactions, (refTxs) => {
+        this.signTrezorTransaction({
+          inputs: generatedInputs.inputs,
+          outputs: outputs,
+          refTxs: refTxs,
+          coin: 'Stakenet'
+        }).then((result) => {
+          console.log(result);
+        });
+      });
+    });
   }
 
-  // https://xsnexplorer.io/api/transactions/70cd9123bcc0525574713a8297f68ad4a1450a0dd0bec468707b1de5ec4c5834/raw
+  private getFeeAmount(): number {
+    if (this.selectedFee === 'low') {
+      return 100;
+    }
+    if (this.selectedFee === 'normal') {
+      return 500;
+    }
+    if (this.selectedFee === 'high') {
+      return 1000;
+    }
+    return 0;
+  }
+
+  private typeOfAddress(address) {
+    if ('X' === address[ 0 ]) {
+      return 'ADDRESS';
+    }
+    if ('x' === address[ 0 ]) {
+      return 'WITNESS';
+    }
+    if ('7' === address[ 0 ]) {
+      return 'P2SHWITNESS';
+    }
+  }
+
   private async generateRefTxs(hashTransactions, callback) {
-    console.log('generateRefTxs');
-    console.log(hashTransactions);
     const refTxs = [];
     for (let i = 0; i < hashTransactions.length; i++) {
       await this.transactionsService.getRaw(hashTransactions[ i ]).subscribe(
         response => {
           const rtx = {
-            lock_time: response.lock_time,
+            lock_time: Number(response.locktime),
             version: response.version,
             bin_outputs: [],
             inputs: [],
@@ -112,85 +126,82 @@ export class ExcaliburConnectComponent implements OnInit {
           });
           response.vout.forEach((output) => {
             rtx.bin_outputs.push({
-              amount: 0,
+              amount: this.convertToSatoshi(output.value),
               script_pubkey: output.scriptPubKey.hex
             });
           });
           refTxs.push(rtx);
         });
     }
-
     callback(refTxs);
   }
 
-  /**
-   * example of transaction with bitcoin
-   * INPUT
-   * (on case to sign path) address_n: [44, 0, 0, 0, 0]
-   * prev_hash(xsn): 70cd9123bcc0525574713a8297f68ad4a1450a0dd0bec468707b1de5ec4c5834
-   * prev_hash: c14246639ff54b2bc626c6ee9063599ed0966e296036bb17522a6c00ffcbd688
-   * prev_index: 0
-   *
-   * OUTPUT
-   * address bitcoin: 1JYb731DDFgTBgwcoXVzf8AWsfrBcd9Lsy
-   * address XSN: XfoZ6Dh8i5SYagpYDNi358kzF1wZowJzyD
-   * satoshis: 490000000 (4.9 XSN)
-   *
-   * using emulator ./build/trezor-emulator-v1.7.3-107-g1b28618.elf
-   *
-   * XSN path [ 44, 0, 0, 0, 3 ]
-   * from: XfoZ6Dh8i5SYagpYDNi358kzF1wZowJzyD (Has 1.3 XSN)
-   * to: XyCiCasy7P4MHtQUknonBTiShBE45Gbbob (Has 1.0 XSN)
-   * sending: 010000000 (0.1 XSN)
-   */
-
-  async signTransaction() {
-    this.generateInputs(this.originAddress, this.amountSatoshi + this.getFeeAmount(), (generatedInputs) => {
-
-      const outputs = [
-        {
-          address: this.destinyAddress,
-          amount: this.amountSatoshi.toString(),
-          script_type: 'PAYTOADDRESS'
-        }
-      ];
-
-      if (generatedInputs.change > 0) {
-        outputs.push({
-          address: this.originAddress,
-          amount: generatedInputs.change.toString(),
-          script_type: 'PAYTOADDRESS'
-        });
-      }
-
-      const hashTransactions = generatedInputs.inputs.map((x) => {
-        return x.prev_hash;
-      });
-      this.generateRefTxs(hashTransactions, (refTxs) => {
-        this.signTrezorTransaction({
-          inputs: generatedInputs.inputs,
-          // inputs: [{prev_hash: 'c14246639ff54b2bc626c6ee9063599ed0966e296036bb17522a6c00ffcbd688', prev_index: 0}],
-          outputs: outputs,
-          refTxs: refTxs,
-          coin: 'Stakenet'
-        }).then((result) => {
-          console.log(result);
-        });
-      });
-    });
+  private async getTrezorAddress(path: string) {
+    const result = await TrezorConnect.getAddress({path: path, coin: 'Stakenet', showOnTrezor: false});
+    return result;
   }
 
-  getFeeAmount(): number {
-    if (this.selectedFee === 'low') {
-      return 100;
-    }
-    if (this.selectedFee === 'normal') {
-      return 500;
-    }
-    if (this.selectedFee === 'high') {
-      return 1000;
+  private async signTrezorTransaction(params) {
+    // return new Promise((succ, fail) => {
+    //   succ('Testing');
+    // });
+    const result = await TrezorConnect.signTransaction(params);
+    return result;
+  }
+
+  private getPathByAddress(address) {
+    const path = this.addresses.filter(element => element.hexAddress === address);
+
+    const pathBytes = [];
+    path[ 0 ].pathAddress.split('\'').forEach( piece => {
+      const num = piece.split('/');
+      num.
+      filter( n => n !== '' && ! isNaN(Number(n))).
+      forEach( n => pathBytes.push(Number(n)) );
+    });
+
+    return pathBytes;
+  }
+
+  private async generateInputs(address, requiredAmount, callback) {
+    const inputs = [];
+    let change = 0;
+
+    await this.addressesService.getUtxos(address).subscribe(
+      response => {
+        response.forEach((utxo) => {
+          if (requiredAmount > 0) {
+            inputs.push({
+              address_n: this.getPathByAddress(address),
+              prev_hash: utxo.txid,
+              prev_index: utxo.outputIndex,
+              amount: utxo.satoshis.toString(),
+              script_type: 'SPEND' + this.typeOfAddress(address)
+            });
+            change = utxo.satoshis - requiredAmount;
+            requiredAmount -= utxo.satoshis;
+          }
+        });
+
+        callback({
+          inputs: inputs,
+          change: change
+        });
+      }
+    );
+  }
+
+  private convertToSatoshi(xsnAmount) {
+    const stringXSN = xsnAmount.toString();
+    let stringSatoshi = '';
+    for (let i = 0; i < stringXSN.length; i++) {
+      if (stringXSN[ i ] === '.') {
+        stringSatoshi += stringXSN.substr(i + 1).padEnd(8, '0');
+        break;
+      }
+      stringSatoshi += stringXSN[ i ];
     }
 
-    return 0;
+    return Number(stringSatoshi);
   }
 }
