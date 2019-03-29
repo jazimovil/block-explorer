@@ -16,6 +16,7 @@ export class ExcaliburConnectComponent implements OnInit {
   originAddress = '';
   destinyAddress = '';
   amountSatoshi = '';
+  selectedTypeAddress = '44';
 
   constructor(
     private addressesService: AddressesService,
@@ -31,7 +32,7 @@ export class ExcaliburConnectComponent implements OnInit {
   }
 
   getAddress() {
-    const path = 'm/44\'/199\'/0\'/0/' + this.addresses.length;
+    const path = `m/${ this.selectedTypeAddress }\'/199\'/0\'/0/${ this.addresses.length }`;
     this.getTrezorAddress(path).then((result) => {
       this.addresses.push({
         hexAddress: result.payload.address,
@@ -39,13 +40,6 @@ export class ExcaliburConnectComponent implements OnInit {
       });
     });
   }
-
-  /**
-   * XSN path [ 44, 0, 0, 0, 3 ]
-   * from: XfoZ6Dh8i5SYagpYDNi358kzF1wZowJzyD (Has 1.19999500 XSN)
-   * to: XyCiCasy7P4MHtQUknonBTiShBE45Gbbob (Has 1.1 XSN)
-   * sending: 002000000 (0.02 XSN)
-   */
 
   async signTransaction() {
     this.generateInputs(this.originAddress, this.amountSatoshi + this.getFeeAmount(), (generatedInputs) => {

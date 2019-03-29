@@ -11,6 +11,12 @@
             <p>{{address.pathAddress}}</p>
           </li>
         </ul>
+        <select [(ngModel)]='selectedTypeAddress'>
+          <option value="44" selected>Legacy</option>
+          <option value="84">Segwit</option>
+          <option value="49">P2shsegwit</option>
+        </select>
+        <br>
         <input type="button" value="Add" (click)="getAddress()">
       </tab>
       <tab heading="Send">
