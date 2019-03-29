@@ -1,7 +1,8 @@
 import { Component, OnInit } from '@angular/core';
-import * as TrezorConnect from '/home/katze/Desktop/trezor/vc/tmp/connect/build/trezor-connect';
+import TrezorConnect from 'trezor-connect';
 import { AddressesService } from '../../services/addresses.service';
 import { TransactionsService } from '../../services/transactions.service';
+
 
 @Component({
   selector: 'app-excalibur-connect',
@@ -156,8 +157,8 @@ export class ExcaliburConnectComponent implements OnInit {
     path[ 0 ].pathAddress.split('\'').forEach( piece => {
       const num = piece.split('/');
       num.
-      filter( n => n !== '' && ! isNaN(Number(n))).
-      forEach( n => pathBytes.push(Number(n)) );
+      filter(n => n !== '' && ! isNaN(Number(n))).
+      forEach(n => pathBytes.push(Number(n)));
     });
 
     return pathBytes;
