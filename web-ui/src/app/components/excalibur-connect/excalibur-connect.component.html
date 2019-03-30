@@ -35,6 +35,11 @@
         </select>
         {{ getFeeAmount() }} Shatoshis<br><br>
         <input type="button" value="New Tx" (click)="signTransaction()">
+        <ul id="txList">
+          <li *ngFor="let tx of transactions">
+            <p>{{ tx.id }}</p>
+          </li>
+        </ul>
       </tab>
     </tabset>
     <br>
