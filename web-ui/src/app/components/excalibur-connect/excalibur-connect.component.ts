@@ -15,8 +15,19 @@ const httpOptions = {
 })
 export class ExcaliburConnectComponent implements OnInit {
 
+  totalBalance: number;
   addresses: Array<{ hexAddress: string, pathAddress: string }>;
   transactions: Array<{ id: string }>;
+  utxos: Array<{
+    hexAddress: string,
+    utxos: Array<{
+      address_n: Array<number>,
+      prev_hash: string,
+      prev_index: number,
+      amount: number,
+      script_type: string
+    }>
+  }>;
   selectedFee = 'normal';
   originAddress = '';
   destinyAddress = '';
@@ -30,9 +41,10 @@ export class ExcaliburConnectComponent implements OnInit {
   ) { }
 
   ngOnInit() {
-    this.addresses = [{ hexAddress: 'XbxUGEVxdpkwUaz9tWuf3HMNFN1u9jXxXB', pathAddress: 'm/44\'/199\'/0\'/0/0' },
-  {hexAddress: 'XtykCTAHXCfVP9tGwvR2jK5tjx1pM9uYmi', pathAddress: 'm/44\'/199\'/0\'/0/1'}];
+    this.totalBalance = 0;
+    this.addresses = [{ hexAddress: 'XbxUGEVxdpkwUaz9tWuf3HMNFN1u9jXxXB', pathAddress: 'm/44\'/199\'/0\'/0/0' }];
     this.transactions = [];
+    this.utxos = [];
     TrezorConnect.manifest({
       email: 'developer@xyz.com',
       appUrl: 'http://your.application.com'
@@ -46,42 +58,73 @@ export class ExcaliburConnectComponent implements OnInit {
         hexAddress: result.payload.address,
         pathAddress: result.payload.serializedPath
       });
+
+      this.addressesService.getUtxos(result.payload.address).subscribe(
+        response => {
+          response.forEach((utxo) => {
+            const utxoForAddress = this.utxos.filter(u => u.hexAddress === result.payload.address);
+            if (utxoForAddress.length === 0) {
+              this.utxos.push({
+                hexAddress: result.payload.address,
+                utxos: [{
+                  address_n: this.getPathByAddress(result.payload.address),
+                  prev_hash: utxo.txid,
+                  prev_index: utxo.outputIndex,
+                  amount: utxo.satoshis,
+                  script_type: 'SPEND' + this.typeOfAddress(result.payload.address)
+                 }]
+              });
+            } else {
+              utxoForAddress[ 0 ].utxos.push({
+                address_n: this.getPathByAddress(result.payload.address),
+                prev_hash: utxo.txid,
+                prev_index: utxo.outputIndex,
+                amount: utxo.satoshis,
+                script_type: 'SPEND' + this.typeOfAddress(result.payload.address)
+              });
+            }
+          });
+
+          this.updateBalance();
+        }
+      );
     });
   }
 
   async signTransaction() {
-    this.generateInputs(this.originAddress, this.amountSatoshi + this.getFeeAmount(), (generatedInputs) => {
 
-      const outputs = [{
-        address: this.destinyAddress,
-        amount: this.amountSatoshi.toString(),
-        script_type: 'PAYTO' + this.typeOfAddress(this.destinyAddress)
-      }];
+    const generatedInputs = this.generateInputs(this.amountSatoshi + this.getFeeAmount());
 
-      if (generatedInputs.change > 0) {
-        outputs.push({
-          address: this.originAddress,
-          amount: generatedInputs.change.toString(),
-          script_type: 'PAYTO' + this.typeOfAddress(this.originAddress)
-        });
-      }
+    const outputs = [{
+      address: this.destinyAddress,
+      amount: this.amountSatoshi.toString(),
+      script_type: 'PAYTO' + this.typeOfAddress(this.destinyAddress)
+    }];
 
-      const hashTransactions = generatedInputs.inputs.map((x) => {
-        return x.prev_hash;
+    if (generatedInputs.change > 0) {
+      outputs.push({
+        address: this.originAddress,
+        amount: generatedInputs.change.toString(),
+        script_type: 'PAYTO' + this.typeOfAddress(this.originAddress)
       });
-      this.generateRefTxs(hashTransactions, (refTxs) => {
-        this.signTrezorTransaction({
-          inputs: generatedInputs.inputs,
-          outputs: outputs,
-          refTxs: refTxs,
-          coin: 'Stakenet'
-        }).then((result) => {
-          if (result.payload.error) {
-            console.log(result);
-          } else {
-            this.pushTransaction(result.payload.serializedTx);
-          }
-        });
+    }
+
+    const hashTransactions = generatedInputs.inputs.map((x) => {
+      return x.prev_hash;
+    });
+
+    this.generateRefTxs(hashTransactions, 0, [], refTxs => {
+      this.signTrezorTransaction({
+        inputs: generatedInputs.inputs,
+        outputs: outputs,
+        refTxs: refTxs,
+        coin: 'Stakenet'
+      }).then((result) => {
+        if (result.payload.error) {
+          console.log(result);
+        } else {
+          this.pushTransaction(result.payload.serializedTx);
+        }
       });
     });
   }
@@ -111,36 +154,67 @@ export class ExcaliburConnectComponent implements OnInit {
     }
   }
 
-  private async generateRefTxs(hashTransactions, callback) {
-    const refTxs = [];
-    for (let i = 0; i < hashTransactions.length; i++) {
-      await this.transactionsService.getRaw(hashTransactions[ i ]).subscribe(
-        response => {
-          const rtx = {
-            lock_time: Number(response.locktime),
-            version: response.version,
-            bin_outputs: [],
-            inputs: [],
-            hash: response.txid
-          };
-          response.vin.forEach((input) => {
-            rtx.inputs.push({
-              prev_hash: input.txid,
-              prev_index: input.vout,
-              script_sig: input.scriptSig.hex,
-              sequence: input.sequence
-            });
-          });
-          response.vout.forEach((output) => {
-            rtx.bin_outputs.push({
-              amount: this.convertToSatoshi(output.value),
-              script_pubkey: output.scriptPubKey.hex
-            });
-          });
-          refTxs.push(rtx);
-        });
+  private async generateRefTxs(hashTransactions, idHash, refTxs, callback) {
+
+    if (hashTransactions.length === 0 || idHash === hashTransactions.length) {
+      callback(refTxs);
     }
-    callback(refTxs);
+
+    this.transactionsService.getRaw(hashTransactions[ idHash ]).subscribe(response => {
+      const rtx = {
+        lock_time: Number(response.locktime),
+        version: response.version,
+        bin_outputs: [],
+        inputs: [],
+        hash: response.txid
+      };
+      response.vin.forEach((input) => {
+        rtx.inputs.push({
+          prev_hash: input.txid,
+          prev_index: input.vout,
+          script_sig: input.scriptSig.hex,
+          sequence: input.sequence
+        });
+      });
+      response.vout.forEach((output) => {
+        rtx.bin_outputs.push({
+          amount: this.convertToSatoshi(output.value),
+          script_pubkey: output.scriptPubKey.hex
+        });
+      });
+      refTxs.push(rtx);
+
+      return this.generateRefTxs(hashTransactions, idHash + 1, refTxs, callback);
+    });
+
+    // for (let i = 0; i < hashTransactions.length; i++) {
+    //   const response = this.transactionsService.getRaw(hashTransactions[ i ]);
+
+    //     const rtx = {
+    //       lock_time: Number(response.locktime),
+    //       version: response.version,
+    //       bin_outputs: [],
+    //       inputs: [],
+    //       hash: response.txid
+    //     };
+    //     response.vin.forEach((input) => {
+    //       rtx.inputs.push({
+    //         prev_hash: input.txid,
+    //         prev_index: input.vout,
+    //         script_sig: input.scriptSig.hex,
+    //         sequence: input.sequence
+    //       });
+    //     });
+    //     response.vout.forEach((output) => {
+    //       rtx.bin_outputs.push({
+    //         amount: this.convertToSatoshi(output.value),
+    //         script_pubkey: output.scriptPubKey.hex
+    //       });
+    //     });
+    //     refTxs.push(rtx);
+    // }
+
+    // return refTxs;
   }
 
   private async getTrezorAddress(path: string) {
@@ -191,32 +265,55 @@ export class ExcaliburConnectComponent implements OnInit {
     return pathBytes;
   }
 
-  private async generateInputs(address, requiredAmount, callback) {
+  private generateInputs(requiredAmount) {
     const inputs = [];
     let change = 0;
 
-    await this.addressesService.getUtxos(address).subscribe(
-      response => {
-        response.forEach((utxo) => {
-          if (requiredAmount > 0) {
-            inputs.push({
-              address_n: this.getPathByAddress(address),
-              prev_hash: utxo.txid,
-              prev_index: utxo.outputIndex,
-              amount: utxo.satoshis.toString(),
-              script_type: 'SPEND' + this.typeOfAddress(address)
-            });
-            change = utxo.satoshis - requiredAmount;
-            requiredAmount -= utxo.satoshis;
-          }
-        });
+    this.utxos.forEach(e => {
+      e.utxos.forEach(utxo => {
+        if (requiredAmount > 0) {
+          inputs.push({
+            address_n: utxo.address_n,
+            prev_hash: utxo.prev_hash,
+            prev_index: utxo.prev_index,
+            amount: utxo.amount.toString(),
+            script_type: utxo.script_type
+          });
 
-        callback({
-          inputs: inputs,
-          change: change
-        });
-      }
-    );
+          change = utxo.amount - requiredAmount;
+          requiredAmount -= utxo.amount;
+        }
+      });
+    });
+
+    return {
+      inputs: inputs,
+      change: change
+    };
+
+    // this.addressesService.getUtxos(address).subscribe(
+    //   response => {
+    //     response.forEach((utxo) => {
+    //       if (requiredAmount > 0) {
+    //         inputs.push({
+    //           address_n: this.getPathByAddress(address),
+    //           prev_hash: utxo.txid,
+    //           prev_index: utxo.outputIndex,
+    //           amount: utxo.satoshis.toString(),
+    //           script_type: 'SPEND' + this.typeOfAddress(address)
+    //         });
+    //         change = utxo.satoshis - requiredAmount;
+    //         requiredAmount -= utxo.satoshis;
+    //       }
+    //     });
+
+    //     callback({
+    //       inputs: inputs,
+    //       change: change
+    //     });
+    //   }
+    // );
+
   }
 
   private convertToSatoshi(xsnAmount) {
@@ -231,5 +328,15 @@ export class ExcaliburConnectComponent implements OnInit {
     }
 
     return Number(stringSatoshi);
+  }
+
+  private updateBalance() {
+    let balance = 0;
+    this.utxos.forEach(e => {
+      e.utxos.forEach(utxo => {
+        balance += utxo.amount;
+      });
+    });
+    this.totalBalance = balance;
   }
 }

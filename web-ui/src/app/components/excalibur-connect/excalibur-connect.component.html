@@ -3,6 +3,7 @@
   <label class="begin">Bitcoin address list</label>
   <div class="begin">
     <tabset>
+      <label>Balance {{ totalBalance }}</label>
       <tab heading="Receive">
         <ul id="addressList">
           <li *ngFor="let address of addresses; let i = index">
