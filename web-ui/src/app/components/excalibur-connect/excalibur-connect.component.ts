@@ -2,7 +2,11 @@ import { Component, OnInit } from '@angular/core';
 import TrezorConnect from 'trezor-connect';
 import { AddressesService } from '../../services/addresses.service';
 import { TransactionsService } from '../../services/transactions.service';
+import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http';
 
+const httpOptions = {
+  headers: new HttpHeaders({ 'Content-Type': 'application/json' })
+};
 
 @Component({
   selector: 'app-excalibur-connect',
@@ -12,6 +16,7 @@ import { TransactionsService } from '../../services/transactions.service';
 export class ExcaliburConnectComponent implements OnInit {
 
   addresses: Array<{ hexAddress: string, pathAddress: string }>;
+  transactions: Array<{ id: string }>;
   selectedFee = 'normal';
   originAddress = '';
   destinyAddress = '';
@@ -20,11 +25,14 @@ export class ExcaliburConnectComponent implements OnInit {
 
   constructor(
     private addressesService: AddressesService,
-    private transactionsService: TransactionsService
+    private transactionsService: TransactionsService,
+    private http: HttpClient
   ) { }
 
   ngOnInit() {
-    this.addresses = [{ hexAddress: 'XfoZ6Dh8i5SYagpYDNi358kzF1wZowJzyD', pathAddress: 'm/44\'/0\'/0\'/0/3' }];
+    this.addresses = [{ hexAddress: 'XbxUGEVxdpkwUaz9tWuf3HMNFN1u9jXxXB', pathAddress: 'm/44\'/199\'/0\'/0/0' },
+  {hexAddress: 'XtykCTAHXCfVP9tGwvR2jK5tjx1pM9uYmi', pathAddress: 'm/44\'/199\'/0\'/0/1'}];
+    this.transactions = [];
     TrezorConnect.manifest({
       email: 'developer@xyz.com',
       appUrl: 'http://your.application.com'
@@ -68,7 +76,11 @@ export class ExcaliburConnectComponent implements OnInit {
           refTxs: refTxs,
           coin: 'Stakenet'
         }).then((result) => {
-          console.log(result);
+          if (result.payload.error) {
+            console.log(result);
+          } else {
+            this.pushTransaction(result.payload.serializedTx);
+          }
         });
       });
     });
@@ -133,15 +145,30 @@ export class ExcaliburConnectComponent implements OnInit {
 
   private async getTrezorAddress(path: string) {
     const result = await TrezorConnect.getAddress({path: path, coin: 'Stakenet', showOnTrezor: false});
+    console.log(result);
     return result;
   }
 
   private async signTrezorTransaction(params) {
+    console.log('sending to sign');
+    console.log(params);
     // return new Promise((succ, fail) => {
     //   succ('Testing');
     // });
     const result = await TrezorConnect.signTransaction(params);
     return result;
+  }
+
+  private pushTransaction(hex) {
+    console.log('push hex');
+    console.log(hex);
+    const httpParams = new HttpParams().set('hex', hex);
+    this.http.post('https://xsnexplorer.io/api/xsn/transactions', { params: httpParams }, httpOptions)
+    .subscribe(e => {
+      console.log('on curl');
+      console.log(e);
+      // this.transactions.push({ id: result.payload.serializedTx });
+    });
   }
 
   private getPathByAddress(address) {
@@ -152,8 +179,14 @@ export class ExcaliburConnectComponent implements OnInit {
       const num = piece.split('/');
       num.
       filter(n => n !== '' && ! isNaN(Number(n))).
-      forEach(n => pathBytes.push(Number(n)));
+      forEach(n => {
+        pathBytes.push(Number(n));
+      });
     });
+
+    pathBytes[ 0 ] |= 0x80000000;
+    pathBytes[ 1 ] |= 0x80000000;
+    pathBytes[ 2 ] |= 0x80000000;
 
     return pathBytes;
   }
