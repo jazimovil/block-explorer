@@ -30,8 +30,10 @@ export class ExcaliburConnectComponent implements OnInit {
   }>;
   selectedFee = 'normal';
   destinyAddress = '';
-  amountSatoshi = '';
+  amountXSN = '';
+  comisionXSN = '';
   selectedTypeAddress = '44';
+  selectedStakeAddress = '';
 
   constructor(
     private addressesService: AddressesService,
@@ -92,11 +94,12 @@ export class ExcaliburConnectComponent implements OnInit {
 
   async signTransaction() {
 
-    const generatedInputs = this.generateInputs(this.amountSatoshi + this.getFeeAmount());
+    const requiredAmount = this.convertToSatoshi(this.amountXSN) + this.getFeeAmount();
+    const generatedInputs = this.generateInputs(requiredAmount);
 
     const outputs = [{
       address: this.destinyAddress,
-      amount: this.amountSatoshi.toString(),
+      amount: this.convertToSatoshi(this.amountXSN).toString(),
       script_type: 'PAYTO' + this.typeOfAddress(this.destinyAddress)
     }];
 
