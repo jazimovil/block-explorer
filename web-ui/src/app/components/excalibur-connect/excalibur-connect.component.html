@@ -46,8 +46,9 @@
         <select [(ngModel)]='selectedStakeAddress'>
           <option *ngFor="let address of addresses">{{ address.hexAddress }}</option>
         </select><br>
-          Comisión:<br>
-          <input [(ngModel)]='comisionXSN' type="number" min="0"><br>
+        Comisión:<br>
+        <input [(ngModel)]='comisionXSN' type="number" min="0"><br>
+        <input type="button" value="Send" (click)="sendTPOS()">
       </tab>
     </tabset>
     <br>
