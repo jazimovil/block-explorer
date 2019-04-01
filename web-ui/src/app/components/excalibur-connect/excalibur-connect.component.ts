@@ -29,7 +29,6 @@ export class ExcaliburConnectComponent implements OnInit {
     }>
   }>;
   selectedFee = 'normal';
-  originAddress = '';
   destinyAddress = '';
   amountSatoshi = '';
   selectedTypeAddress = '44';
@@ -103,9 +102,9 @@ export class ExcaliburConnectComponent implements OnInit {
 
     if (generatedInputs.change > 0) {
       outputs.push({
-        address: this.originAddress,
+        address: generatedInputs.addressToChange,
         amount: generatedInputs.change.toString(),
-        script_type: 'PAYTO' + this.typeOfAddress(this.originAddress)
+        script_type: 'PAYTO' + this.typeOfAddress(generatedInputs.addressToChange)
       });
     }
 
@@ -154,10 +153,11 @@ export class ExcaliburConnectComponent implements OnInit {
     }
   }
 
-  private async generateRefTxs(hashTransactions, idHash, refTxs, callback) {
+  private generateRefTxs(hashTransactions, idHash, refTxs, callback) {
 
     if (hashTransactions.length === 0 || idHash === hashTransactions.length) {
       callback(refTxs);
+      return;
     }
 
     this.transactionsService.getRaw(hashTransactions[ idHash ]).subscribe(response => {
@@ -184,37 +184,8 @@ export class ExcaliburConnectComponent implements OnInit {
       });
       refTxs.push(rtx);
 
-      return this.generateRefTxs(hashTransactions, idHash + 1, refTxs, callback);
+      this.generateRefTxs(hashTransactions, idHash + 1, refTxs, callback);
     });
-
-    // for (let i = 0; i < hashTransactions.length; i++) {
-    //   const response = this.transactionsService.getRaw(hashTransactions[ i ]);
-
-    //     const rtx = {
-    //       lock_time: Number(response.locktime),
-    //       version: response.version,
-    //       bin_outputs: [],
-    //       inputs: [],
-    //       hash: response.txid
-    //     };
-    //     response.vin.forEach((input) => {
-    //       rtx.inputs.push({
-    //         prev_hash: input.txid,
-    //         prev_index: input.vout,
-    //         script_sig: input.scriptSig.hex,
-    //         sequence: input.sequence
-    //       });
-    //     });
-    //     response.vout.forEach((output) => {
-    //       rtx.bin_outputs.push({
-    //         amount: this.convertToSatoshi(output.value),
-    //         script_pubkey: output.scriptPubKey.hex
-    //       });
-    //     });
-    //     refTxs.push(rtx);
-    // }
-
-    // return refTxs;
   }
 
   private async getTrezorAddress(path: string) {
@@ -268,6 +239,7 @@ export class ExcaliburConnectComponent implements OnInit {
   private generateInputs(requiredAmount) {
     const inputs = [];
     let change = 0;
+    let addressToChange = '';
 
     this.utxos.forEach(e => {
       e.utxos.forEach(utxo => {
@@ -280,6 +252,7 @@ export class ExcaliburConnectComponent implements OnInit {
             script_type: utxo.script_type
           });
 
+          addressToChange = e.hexAddress;
           change = utxo.amount - requiredAmount;
           requiredAmount -= utxo.amount;
         }
@@ -288,32 +261,9 @@ export class ExcaliburConnectComponent implements OnInit {
 
     return {
       inputs: inputs,
+      addressToChange: addressToChange,
       change: change
     };
-
-    // this.addressesService.getUtxos(address).subscribe(
-    //   response => {
-    //     response.forEach((utxo) => {
-    //       if (requiredAmount > 0) {
-    //         inputs.push({
-    //           address_n: this.getPathByAddress(address),
-    //           prev_hash: utxo.txid,
-    //           prev_index: utxo.outputIndex,
-    //           amount: utxo.satoshis.toString(),
-    //           script_type: 'SPEND' + this.typeOfAddress(address)
-    //         });
-    //         change = utxo.satoshis - requiredAmount;
-    //         requiredAmount -= utxo.satoshis;
-    //       }
-    //     });
-
-    //     callback({
-    //       inputs: inputs,
-    //       change: change
-    //     });
-    //   }
-    // );
-
   }
 
   private convertToSatoshi(xsnAmount) {
