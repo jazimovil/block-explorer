@@ -92,7 +92,7 @@ export class ExcaliburConnectComponent implements OnInit {
     });
   }
 
-  async signTransaction() {
+  signTransaction() {
 
     const requiredAmount = this.convertToSatoshi(this.amountXSN) + this.getFeeAmount();
     const generatedInputs = this.generateInputs(requiredAmount);
@@ -129,6 +129,10 @@ export class ExcaliburConnectComponent implements OnInit {
         }
       });
     });
+  }
+
+  sendTPOS() {
+    console.log('sending tpos');
   }
 
   private getFeeAmount(): number {
@@ -232,8 +236,11 @@ export class ExcaliburConnectComponent implements OnInit {
       });
     });
 
+    // tslint:disable-next-line:no-bitwise
     pathBytes[ 0 ] |= 0x80000000;
+    // tslint:disable-next-line:no-bitwise
     pathBytes[ 1 ] |= 0x80000000;
+    // tslint:disable-next-line:no-bitwise
     pathBytes[ 2 ] |= 0x80000000;
 
     return pathBytes;
@@ -272,15 +279,25 @@ export class ExcaliburConnectComponent implements OnInit {
   private convertToSatoshi(xsnAmount) {
     const stringXSN = xsnAmount.toString();
     let stringSatoshi = '';
+    let withDot = false;
     for (let i = 0; i < stringXSN.length; i++) {
       if (stringXSN[ i ] === '.') {
         stringSatoshi += stringXSN.substr(i + 1).padEnd(8, '0');
+        withDot = true;
         break;
       }
       stringSatoshi += stringXSN[ i ];
     }
 
+    if ( ! withDot) {
+      stringSatoshi = stringSatoshi.padEnd(8, '0');
+    }
+
     return Number(stringSatoshi);
+  }
+
+  private convertToXSN(satoshiAmount) {
+    return satoshiAmount / 100000000;
   }
 
   private updateBalance() {
@@ -290,6 +307,6 @@ export class ExcaliburConnectComponent implements OnInit {
         balance += utxo.amount;
       });
     });
-    this.totalBalance = balance;
+    this.totalBalance = this.convertToXSN(balance);
   }
 }
