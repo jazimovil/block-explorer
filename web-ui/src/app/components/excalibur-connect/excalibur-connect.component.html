@@ -24,7 +24,7 @@
         Destiny address:<br>
         <input [(ngModel)]='destinyAddress'type="text"><br>
         Amount:<br>
-        <input [(ngModel)]='amountSatoshi' type="number" min="0"><br>
+        <input [(ngModel)]='amountXSN' type="number" min="0"><br>
         Fee:<br>
         <select [(ngModel)]='selectedFee'>
           <option value="high">High</option>
@@ -38,6 +38,16 @@
             <p>{{ tx.id }}</p>
           </li>
         </ul>
+      </tab>
+      <tab heading="TPOS">
+        Merchant address:<br>
+        <input [(ngModel)]='merchantAddress'type="text"><br>
+        MerchantStake address:<br>
+        <select [(ngModel)]='selectedStakeAddress'>
+          <option *ngFor="let address of addresses">{{ address.hexAddress }}</option>
+        </select><br>
+          Comisión:<br>
+          <input [(ngModel)]='comisionXSN' type="number" min="0"><br>
       </tab>
     </tabset>
     <br>
