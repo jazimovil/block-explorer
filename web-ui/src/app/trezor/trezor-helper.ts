@@ -5,13 +5,25 @@ export class TrezorAddress {
     public address: string,
     public path: number[],
     public serializedPath: string) { }
+  static LEGACY = 'ADDRESS';
+  static SEGWIT = 'WITNESS';
+  static P2SHSEGWIT = 'P2SHWITNESS';
 }
 
-export const getAddressType = (address: string) => {
+export const getAddressTypeByAddress = (address: string) => {
   switch (address[0]) {
-    case 'X': return 'ADDRESS';
-    case 'x': return 'WITNESS';
-    case '7': return 'P2SHWITNESS';
+    case 'X': return TrezorAddress.LEGACY;
+    case 'x': return TrezorAddress.SEGWIT;
+    case '7': return TrezorAddress.P2SHSEGWIT;
+    default: throw new Error('Unknown address type');
+  }
+};
+
+export const getAddressTypeByPrefix = (prefix: number) => {
+  switch (prefix) {
+    case 44: return TrezorAddress.LEGACY;
+    case 84: return TrezorAddress.SEGWIT;
+    case 49: return TrezorAddress.P2SHSEGWIT;
     default: throw new Error('Unknown address type');
   }
 };
@@ -82,6 +94,6 @@ export const toTrezorInput = (trezorAddresses: TrezorAddress[], utxo: UTXO) => {
     prev_hash: utxo.txid,
     prev_index: utxo.outputIndex,
     amount: utxo.satoshis.toString(),
-    script_type: 'SPEND' + getAddressType(trezorAddress.address)
+    script_type: 'SPEND' + getAddressTypeByAddress(trezorAddress.address)
   };
 };

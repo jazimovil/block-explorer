@@ -6,19 +6,29 @@
       <label>Balance {{ satoshiToXsn(getAvailableSatoshis()) | explorerCurrency }}</label>
       <tab heading="Receive">
         <ul id="addressList">
-          <li *ngFor="let item of trezorAddresses; let i = index">
+          <li *ngFor="let item of trezorAddressesLegacy; let i = index">
+            <label>Address #{{i + 1}}:</label>
+            <p>{{item.address}}</p>
+            <p>{{item.serializedPath}}</p>
+          </li>
+          <li *ngFor="let item of trezorAddressesSegwit; let i = index">
+            <label>Address #{{i + 1}}:</label>
+            <p>{{item.address}}</p>
+            <p>{{item.serializedPath}}</p>
+          </li>
+          <li *ngFor="let item of trezorAddressesP2shsegwit; let i = index">
             <label>Address #{{i + 1}}:</label>
             <p>{{item.address}}</p>
             <p>{{item.serializedPath}}</p>
           </li>
         </ul>
         <select #selectedAddressType (change) = "refresh()">
-          <option value="44" selected>Legacy</option>
-          <option value="84">Segwit</option>
-          <option value="49">P2shsegwit</option>
+          <option value=44 selected>Legacy</option>
+          <option value=84>Segwit</option>
+          <option value=49>P2shsegwit</option>
         </select>
         <br>
-        <input type="button" value="Add" (click)="generateNextAddress(selectedAddressType.value)">
+        <input type="button" value="Add" (click)="generateNextAddress(+selectedAddressType.value)">
       </tab>
       <tab heading="Send">
         Destiny address:<br>
