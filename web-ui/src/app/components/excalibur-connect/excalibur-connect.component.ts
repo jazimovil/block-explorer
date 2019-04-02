@@ -8,7 +8,14 @@ import TrezorConnect from 'trezor-connect';
 import { AddressesService } from '../../services/addresses.service';
 import { TransactionsService } from '../../services/transactions.service';
 import { UTXO } from '../../models/utxo';
-import { TrezorAddress, getAddressType, selectUtxos, toTrezorInput, toTrezorReferenceTransaction } from '../../trezor/trezor-helper';
+import {
+  TrezorAddress,
+  getAddressType,
+  selectUtxos,
+  toTrezorInput,
+  toTrezorReferenceTransaction,
+  convertToSatoshis
+} from '../../trezor/trezor-helper';
 
 @Component({
   selector: 'app-excalibur-connect',
@@ -34,7 +41,7 @@ export class ExcaliburConnectComponent implements OnInit {
   }
 
   getAvailableSatoshis() {
-    this.utxos.map(u => u.satoshis).reduce((a, b) => a + b, 0);
+    return this.utxos.map(u => u.satoshis).reduce((a, b) => a + b, 0);
   }
 
   private onTrezorAddressGenerated(trezorAddress: TrezorAddress) {
@@ -51,8 +58,9 @@ export class ExcaliburConnectComponent implements OnInit {
       .then(this.onTrezorAddressGenerated.bind(this));
   }
 
-  signTransaction(destinationAddress: string, satoshis: number) {
-    const generatedInputs = this.generateInputs(satoshis);
+  signTransaction(destinationAddress: string, xsns: number, fee: number) {
+    const satoshis = convertToSatoshis(xsns);
+    const generatedInputs = this.generateInputs(+satoshis + +fee);
 
     const outputs = [{
       address: destinationAddress,
@@ -103,7 +111,6 @@ export class ExcaliburConnectComponent implements OnInit {
 
   private async getTrezorAddress(path: string): Promise<TrezorAddress> {
     const result = await TrezorConnect.getAddress({path: path, coin: 'Stakenet', showOnTrezor: false});
-    console.log(result);
     return result.payload;
   }
 
@@ -138,7 +145,9 @@ export class ExcaliburConnectComponent implements OnInit {
     };
   }
 
-  renderSatoshis(amount: number) {
+  satoshiToXsn(amount: number) {
     return amount / 100000000;
   }
+
+  refresh() { }
 }
