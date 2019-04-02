@@ -3,7 +3,7 @@
   <label class="begin">Bitcoin address list</label>
   <div class="begin">
     <tabset>
-      <label>Balance {{ renderSatoshis(getAvailableSatoshis()) | explorerCurrency }}</label>
+      <label>Balance {{ satoshiToXsn(getAvailableSatoshis()) | explorerCurrency }}</label>
       <tab heading="Receive">
         <ul id="addressList">
           <li *ngFor="let item of trezorAddresses; let i = index">
@@ -12,13 +12,13 @@
             <p>{{item.serializedPath}}</p>
           </li>
         </ul>
-        <select #selectedAddressType>
+        <select #selectedAddressType (change) = "refresh()">
           <option value="44" selected>Legacy</option>
           <option value="84">Segwit</option>
           <option value="49">P2shsegwit</option>
         </select>
         <br>
-        <input type="button" value="Add" (click)="generateNextAddress(selectedAddressType)">
+        <input type="button" value="Add" (click)="generateNextAddress(selectedAddressType.value)">
       </tab>
       <tab heading="Send">
         Destiny address:<br>
@@ -26,13 +26,14 @@
         Amount:<br>
         <input #amountXSN type="number" min="0" step="0.00000001"><br>
         Fee:<br>
-        <select #selectedFee>
+        <select #selectedFee (change) = "refresh()">
           <option value="1000">High</option>
           <option value="500" selected>Normal</option>
           <option value="100">Low</option>
         </select>
-        {{ selectedFee }} Shatoshis<br><br>
-        <input type="button" value="New Tx" (click)="signTransaction(destinationAddress, amountXSN + selectedFee)">
+        {{ selectedFee.value }} Shatoshis<br><br>
+        <input type="button" value="New Tx"
+        (click)="signTransaction(destinationAddress.value, amountXSN.value, selectedFee.value)">
       </tab>
       <tab heading="TPOS">
         Merchant address:<br>
