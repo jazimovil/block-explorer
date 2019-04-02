@@ -23,8 +23,16 @@ export class TransactionsService {
   }
 
   getRaw(txid: string): Observable<any> {
-    // const url = `${this.baseUrl}/${txid}/raw`;
-    const url = `https://xsnexplorer.io/api/transactions/${txid}/raw`;
+    const url = `${this.baseUrl}/${txid}/raw`;
     return this.http.get<any>(url);
+  }
+
+  push(hex: string): Observable<any> {
+    const url = this.baseUrl;
+    const body = {
+      hex: hex
+    };
+
+    return this.http.post<any>(url, body, httpOptions);
   }
 }

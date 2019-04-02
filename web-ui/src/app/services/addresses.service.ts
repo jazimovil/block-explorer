@@ -7,7 +7,8 @@ import { environment } from '../../environments/environment';
 import { Balance } from '../models/balance';
 import { PaginatedResult } from '../models/paginated-result';
 import { LightWalletTransaction } from '../models/light-wallet-transaction';
-import { Transaction, UTXO } from '../models/transaction';
+import { Transaction } from '../models/transaction';
+import { UTXO } from '../models/utxo';
 import { WrappedResult } from '../models/wrapped-result';
 
 const httpOptions = {
@@ -46,10 +47,8 @@ export class AddressesService {
     return this.http.get<WrappedResult<LightWalletTransaction>>(url);
   }
 
-  getUtxos(address): Observable<[UTXO]> {
-    // const url = `${this.baseUrl}/${address}/utxos`;
-    const formalUrl = 'https://xsnexplorer.io/api/addresses';
-    const url = `${formalUrl}/${address}/utxos`;
-    return this.http.get<[UTXO]>(url);
+  getUtxos(address): Observable<UTXO[]> {
+    const url = `${this.baseUrl}/${address}/utxos`;
+    return this.http.get<UTXO[]>(url);
   }
 }
