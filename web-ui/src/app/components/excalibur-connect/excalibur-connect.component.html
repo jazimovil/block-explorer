@@ -3,51 +3,46 @@
   <label class="begin">Bitcoin address list</label>
   <div class="begin">
     <tabset>
-      <label>Balance {{ totalBalance }}</label>
+      <label>Balance {{ renderSatoshis(getAvailableSatoshis()) | explorerCurrency }}</label>
       <tab heading="Receive">
         <ul id="addressList">
-          <li *ngFor="let address of addresses; let i = index">
+          <li *ngFor="let item of trezorAddresses; let i = index">
             <label>Address #{{i + 1}}:</label>
-            <p>{{address.hexAddress}}</p>
-            <p>{{address.pathAddress}}</p>
+            <p>{{item.address}}</p>
+            <p>{{item.serializedPath}}</p>
           </li>
         </ul>
-        <select [(ngModel)]='selectedTypeAddress'>
+        <select #selectedAddressType>
           <option value="44" selected>Legacy</option>
           <option value="84">Segwit</option>
           <option value="49">P2shsegwit</option>
         </select>
         <br>
-        <input type="button" value="Add" (click)="getAddress()">
+        <input type="button" value="Add" (click)="generateNextAddress(selectedAddressType)">
       </tab>
       <tab heading="Send">
         Destiny address:<br>
-        <input [(ngModel)]='destinyAddress'type="text"><br>
+        <input #destinationAddress type="text"><br>
         Amount:<br>
-        <input [(ngModel)]='amountXSN' type="number" min="0"><br>
+        <input #amountXSN type="number" min="0" step="0.00000001"><br>
         Fee:<br>
-        <select [(ngModel)]='selectedFee'>
-          <option value="high">High</option>
-          <option value="normal" selected>Normal</option>
-          <option value="low">Low</option>
+        <select #selectedFee>
+          <option value="1000">High</option>
+          <option value="500" selected>Normal</option>
+          <option value="100">Low</option>
         </select>
-        {{ getFeeAmount() }} Shatoshis<br><br>
-        <input type="button" value="New Tx" (click)="signTransaction()">
-        <ul id="txList">
-          <li *ngFor="let tx of transactions">
-            <p>{{ tx.id }}</p>
-          </li>
-        </ul>
+        {{ selectedFee }} Shatoshis<br><br>
+        <input type="button" value="New Tx" (click)="signTransaction(destinationAddress, amountXSN + selectedFee)">
       </tab>
       <tab heading="TPOS">
         Merchant address:<br>
-        <input [(ngModel)]='merchantAddress'type="text"><br>
+        <input #merchantAddress type="text"><br>
         MerchantStake address:<br>
-        <select [(ngModel)]='selectedStakeAddress'>
-          <option *ngFor="let address of addresses">{{ address.hexAddress }}</option>
+        <select #selectedStakeAddress>
+          <option *ngFor="let item of trezorAddresses">{{ item.address }}</option>
         </select><br>
         Comisión:<br>
-        <input [(ngModel)]='comisionXSN' type="number" min="0"><br>
+        <input #commisionXSN type="number" min="0"><br>
         <input type="button" value="Send" (click)="sendTPOS()">
       </tab>
     </tabset>

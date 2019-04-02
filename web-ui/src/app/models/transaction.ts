@@ -17,10 +17,3 @@ export class TransactionValue {
   value: number;
 }
 
-export class UTXO {
-  satoshis: number;
-  txid: string;
-  outputIndex: number;
-  address: string;
-  script: string;
-}
