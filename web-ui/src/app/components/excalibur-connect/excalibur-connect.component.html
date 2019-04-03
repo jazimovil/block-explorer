@@ -6,17 +6,7 @@
       <label>Balance {{ satoshiToXsn(getAvailableSatoshis()) | explorerCurrency }}</label>
       <tab heading="Receive">
         <ul id="addressList">
-          <li *ngFor="let item of trezorAddressesLegacy; let i = index">
-            <label>Address #{{i + 1}}:</label>
-            <p>{{item.address}}</p>
-            <p>{{item.serializedPath}}</p>
-          </li>
-          <li *ngFor="let item of trezorAddressesSegwit; let i = index">
-            <label>Address #{{i + 1}}:</label>
-            <p>{{item.address}}</p>
-            <p>{{item.serializedPath}}</p>
-          </li>
-          <li *ngFor="let item of trezorAddressesP2shsegwit; let i = index">
+          <li *ngFor="let item of trezorAddresses; let i = index">
             <label>Address #{{i + 1}}:</label>
             <p>{{item.address}}</p>
             <p>{{item.serializedPath}}</p>

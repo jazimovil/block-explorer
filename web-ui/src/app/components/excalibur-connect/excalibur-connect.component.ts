@@ -25,9 +25,7 @@ import {
 })
 export class ExcaliburConnectComponent implements OnInit {
 
-  trezorAddressesLegacy: TrezorAddress[] = [];
-  trezorAddressesSegwit: TrezorAddress[] = [];
-  trezorAddressesP2shsegwit: TrezorAddress[] = [];
+  trezorAddresses: TrezorAddress[] = [];
   utxos: UTXO[] = [];
 
   constructor(
@@ -48,39 +46,17 @@ export class ExcaliburConnectComponent implements OnInit {
   }
 
   private onTrezorAddressGenerated(trezorAddress: TrezorAddress) {
-    switch (getAddressTypeByAddress(trezorAddress.address)) {
-      case TrezorAddress.LEGACY:
-      this.trezorAddressesLegacy.push(trezorAddress);
-      break;
-      case TrezorAddress.SEGWIT:
-      this.trezorAddressesSegwit.push(trezorAddress);
-      break;
-      case TrezorAddress.P2SHSEGWIT:
-      this.trezorAddressesP2shsegwit.push(trezorAddress);
-      break;
-      default: throw new Error('Unknown address type');
-    }
-
+    this.trezorAddresses.push(trezorAddress);
     this.addressesService
       .getUtxos(trezorAddress.address)
       .subscribe( utxos => this.utxos = this.utxos.concat(utxos) );
   }
 
   generateNextAddress(addressType: number): void {
-    let path: string;
-    switch (getAddressTypeByPrefix(addressType)) {
-      case TrezorAddress.LEGACY:
-      path = `m/${addressType.toString()}'/199'/0'/0/${this.trezorAddressesLegacy.length}`;
-      break;
-      case TrezorAddress.SEGWIT:
-      path = `m/${addressType.toString()}'/199'/0'/0/${this.trezorAddressesSegwit.length}`;
-      break;
-      case TrezorAddress.P2SHSEGWIT:
-      path = `m/${addressType.toString()}'/199'/0'/0/${this.trezorAddressesP2shsegwit.length}`;
-      break;
-      default: throw new Error('Unknown address type');
-    }
-
+    const newIdByType = this.trezorAddresses
+      .filter(item => getAddressTypeByAddress(item.address) === getAddressTypeByPrefix(addressType))
+      .length;
+    const path = `m/${addressType.toString()}'/199'/0'/0/${newIdByType}`;
     this.getTrezorAddress(path)
       .then(this.onTrezorAddressGenerated.bind(this));
   }
@@ -162,9 +138,7 @@ export class ExcaliburConnectComponent implements OnInit {
   private generateInputs(satoshis: number) {
     const selectedUtxos = selectUtxos(this.utxos, satoshis);
     const change = selectedUtxos.total - satoshis;
-    const allTrezorAddress =
-    this.trezorAddressesLegacy.concat(this.trezorAddressesSegwit).concat(this.trezorAddressesP2shsegwit);
-    const inputs = selectedUtxos.utxos.map(utxo => toTrezorInput(allTrezorAddress, utxo));
+    const inputs = selectedUtxos.utxos.map(utxo => toTrezorInput(this.trezorAddresses, utxo));
     const addressToChange = selectedUtxos.utxos[selectedUtxos.utxos.length - 1].address;
 
     return {
