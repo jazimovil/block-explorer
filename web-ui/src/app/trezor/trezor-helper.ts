@@ -42,7 +42,7 @@ export const convertToSatoshis = (xsnAmount: number) => {
   }
 
   if (!withDot) {
-    stringSatoshi = stringSatoshi.padEnd(8, '0');
+    stringSatoshi = stringSatoshi + ''.padEnd(8, '0');
   }
 
   return Number(stringSatoshi);
