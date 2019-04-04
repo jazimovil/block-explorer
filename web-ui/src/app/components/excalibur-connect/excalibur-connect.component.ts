@@ -5,6 +5,8 @@ import { map } from 'rxjs/operators';
 
 import TrezorConnect from 'trezor-connect';
 
+// import * as TrezorConnect from '/home/katze/Desktop/trezor/vc/tmp/connect/build/trezor-connect';
+import { TrezorRepositoryService } from '../../services/trezor-repository.service';
 import { AddressesService } from '../../services/addresses.service';
 import { TransactionsService } from '../../services/transactions.service';
 import { UTXO } from '../../models/utxo';
@@ -31,6 +33,7 @@ export class ExcaliburConnectComponent implements OnInit {
   constructor(
     private addressesService: AddressesService,
     private transactionsService: TransactionsService,
+    private trezorRepositoryService: TrezorRepositoryService,
     private http: HttpClient
   ) { }
 
@@ -39,14 +42,28 @@ export class ExcaliburConnectComponent implements OnInit {
       email: 'developer@xyz.com',
       appUrl: 'http://your.application.com'
     });
+    this.trezorAddresses = this.trezorRepositoryService.get();
+    this.loadUtxos(this.trezorAddresses);
   }
 
   getAvailableSatoshis() {
     return this.utxos.map(u => u.satoshis).reduce((a, b) => a + b, 0);
   }
 
+  private loadUtxos(addresses: TrezorAddress[]) {
+    const observables = addresses
+      .map( trezorAddress => trezorAddress.address )
+      .map( address => this.addressesService.getUtxos(address) );
+    forkJoin(observables).subscribe(
+      allUtxos => this.utxos = allUtxos.reduce((utxosA, utxosB) => {
+        return utxosA.concat(utxosB);
+      }, [])
+    );
+
+  }
+
   private onTrezorAddressGenerated(trezorAddress: TrezorAddress) {
-    this.trezorAddresses.push(trezorAddress);
+    this.trezorRepositoryService.add(trezorAddress);
     this.addressesService
       .getUtxos(trezorAddress.address)
       .subscribe( utxos => this.utxos = this.utxos.concat(utxos) );
@@ -64,7 +81,10 @@ export class ExcaliburConnectComponent implements OnInit {
   signTransaction(destinationAddress: string, xsns: number, fee: number) {
     const satoshis = convertToSatoshis(xsns);
     const generatedInputs = this.generateInputs(+satoshis + +fee);
-
+    if (generatedInputs.error) {
+      console.log(generatedInputs.error);
+      return;
+    }
     const outputs = [{
       address: destinationAddress,
       amount: satoshis.toString(),
@@ -124,6 +144,7 @@ export class ExcaliburConnectComponent implements OnInit {
     //   succ('Testing');
     // });
     const result = await TrezorConnect.signTransaction(params);
+    // const result = await TrezorConnect.signTxInput(params);
     return result;
   }
 
@@ -137,6 +158,11 @@ export class ExcaliburConnectComponent implements OnInit {
 
   private generateInputs(satoshis: number) {
     const selectedUtxos = selectUtxos(this.utxos, satoshis);
+    if (selectedUtxos.utxos.length === 0) {
+      return {
+        error: 'No utoxs'
+      };
+    }
     const change = selectedUtxos.total - satoshis;
     const inputs = selectedUtxos.utxos.map(utxo => toTrezorInput(this.trezorAddresses, utxo));
     const addressToChange = selectedUtxos.utxos[selectedUtxos.utxos.length - 1].address;

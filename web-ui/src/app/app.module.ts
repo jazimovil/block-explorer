@@ -28,6 +28,7 @@ import { NavigatorService } from './services/navigator.service';
 import { NotificationService } from './services/notification.service';
 import { TickerService } from './services/ticker.service';
 import { TransactionsService } from './services/transactions.service';
+import { TrezorRepositoryService } from './services/trezor-repository.service';
 
 import { AppComponent } from './app.component';
 import { HomeComponent } from './components/home/home.component';
@@ -104,7 +105,8 @@ import { ExcaliburConnectComponent } from './components/excalibur-connect/excali
     NavigatorService,
     NotificationService,
     TickerService,
-    TransactionsService
+    TransactionsService,
+    TrezorRepositoryService
   ],
   bootstrap: [AppComponent]
 })
