@@ -1,5 +1,4 @@
 import { Component, OnInit } from '@angular/core';
-import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http';
 import { Observable, forkJoin } from 'rxjs';
 import { map } from 'rxjs/operators';
 
@@ -33,8 +32,7 @@ export class ExcaliburConnectComponent implements OnInit {
   constructor(
     private addressesService: AddressesService,
     private transactionsService: TransactionsService,
-    private trezorRepositoryService: TrezorRepositoryService,
-    private http: HttpClient
+    private trezorRepositoryService: TrezorRepositoryService
   ) { }
 
   ngOnInit() {
