@@ -8,6 +8,15 @@
         <ul id="addressList">
           <li *ngFor="let item of trezorAddresses; let i = index">
             <label>Address #{{i + 1}}:</label>
+            <p *ngIf="isTrezorAddressVerified(item.address) else elseBlock">
+              <label >Verified O</label>
+            </p>
+            <ng-template #elseBlock>
+              <p>
+                <input type="button" value="Verify" (click)="verifyAddress(item)"><br>
+                <label>Not verified X</label>
+              </p>
+            </ng-template>
             <p>{{item.address}}</p>
             <p>{{item.serializedPath}}</p>
           </li>
