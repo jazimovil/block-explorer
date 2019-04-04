@@ -29,23 +29,10 @@ export const getAddressTypeByPrefix = (prefix: number) => {
 };
 
 export const convertToSatoshis = (xsnAmount: number) => {
-  const stringXSN = xsnAmount.toString();
-  let stringSatoshi = '';
-  let withDot = false;
-  for (let i = 0; i < stringXSN.length; i++) {
-    if (stringXSN[i] === '.') {
-      stringSatoshi += stringXSN.substr(i + 1).padEnd(8, '0');
-      withDot = true;
-      break;
-    }
-    stringSatoshi += stringXSN[i];
-  }
-
-  if (!withDot) {
-    stringSatoshi = stringSatoshi + ''.padEnd(8, '0');
-  }
-
-  return Number(stringSatoshi);
+  const splitXSN = xsnAmount.toString().split('.');
+  const num = splitXSN[ 0 ];
+  const dec = splitXSN.length === 1 ? '' : splitXSN[ 1 ];
+  return Number(num + dec.padEnd(8, '0'));
 };
 
 export const toTrezorReferenceTransaction = (raw: any) => {
