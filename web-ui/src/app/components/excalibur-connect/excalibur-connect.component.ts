@@ -5,7 +5,6 @@ import { map } from 'rxjs/operators';
 
 import TrezorConnect from 'trezor-connect';
 
-// import * as TrezorConnect from '/home/katze/Desktop/trezor/vc/tmp/connect/build/trezor-connect';
 import { TrezorRepositoryService } from '../../services/trezor-repository.service';
 import { AddressesService } from '../../services/addresses.service';
 import { TransactionsService } from '../../services/transactions.service';
@@ -28,6 +27,7 @@ import {
 export class ExcaliburConnectComponent implements OnInit {
 
   trezorAddresses: TrezorAddress[] = [];
+  verifiedTrezorAddress: string[] = [];
   utxos: UTXO[] = [];
 
   constructor(
@@ -59,11 +59,15 @@ export class ExcaliburConnectComponent implements OnInit {
         return utxosA.concat(utxosB);
       }, [])
     );
+  }
 
+  isTrezorAddressVerified(address: string): boolean {
+    return this.verifiedTrezorAddress.includes(address);
   }
 
   private onTrezorAddressGenerated(trezorAddress: TrezorAddress) {
     this.trezorRepositoryService.add(trezorAddress);
+    this.verifiedTrezorAddress.push(trezorAddress.address);
     this.addressesService
       .getUtxos(trezorAddress.address)
       .subscribe( utxos => this.utxos = this.utxos.concat(utxos) );
@@ -123,6 +127,16 @@ export class ExcaliburConnectComponent implements OnInit {
     console.log('sending tpos');
   }
 
+  verifyAddress(trezorAddress: TrezorAddress): void {
+    this.getTrezorAddress(trezorAddress.serializedPath).then( response => {
+      if (response.address === trezorAddress.address) {
+        this.verifiedTrezorAddress.push(trezorAddress.address);
+      } else {
+        console.log('Fail to verify');
+      }
+    });
+  }
+
   private getRefTransactions(txids: string[]): Observable<any[]> {
     const observables = txids.map( txid => this.transactionsService.getRaw(txid) );
     const result = forkJoin(observables).pipe(
@@ -144,7 +158,6 @@ export class ExcaliburConnectComponent implements OnInit {
     //   succ('Testing');
     // });
     const result = await TrezorConnect.signTransaction(params);
-    // const result = await TrezorConnect.signTxInput(params);
     return result;
   }
 
