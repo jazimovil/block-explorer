@@ -32,7 +32,7 @@ export const convertToSatoshis = (xsnAmount: number) => {
   if (xsnAmount < 0) {
     throw new Error('Invalid negative amount');
   }
-  const splitXSN = xsnAmount.toFixed(8).split('.');
+  const splitXSN = Number(xsnAmount).toFixed(8).split('.');
   const num = splitXSN[ 0 ];
   const dec = splitXSN.length === 1 ? '' : splitXSN[ 1 ];
   return Number(num + dec.padEnd(8, '0'));

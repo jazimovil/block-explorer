@@ -64,6 +64,9 @@ export class TrezorConnectComponent implements OnInit {
   }
 
   private onTrezorAddressGenerated(trezorAddress: TrezorAddress) {
+    if (typeof(trezorAddress.address) === 'undefined') {
+      return;
+    }
     this.trezorRepositoryService.add(trezorAddress);
     this.verifiedTrezorAddress.push(trezorAddress.address);
     this.addressesService
