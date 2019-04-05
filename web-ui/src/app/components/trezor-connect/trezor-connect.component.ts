@@ -19,11 +19,11 @@ import {
 } from '../../trezor/trezor-helper';
 
 @Component({
-  selector: 'app-excalibur-connect',
-  templateUrl: './excalibur-connect.component.html',
-  styleUrls: ['./excalibur-connect.component.css']
+  selector: 'app-trezor-connect',
+  templateUrl: './trezor-connect.component.html',
+  styleUrls: ['./trezor-connect.component.css']
 })
-export class ExcaliburConnectComponent implements OnInit {
+export class TrezorConnectComponent implements OnInit {
 
   trezorAddresses: TrezorAddress[] = [];
   verifiedTrezorAddress: string[] = [];

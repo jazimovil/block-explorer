@@ -1,6 +1,6 @@
 import { async, ComponentFixture, TestBed } from '@angular/core/testing';
 
-import { ExcaliburConnectComponent } from './excalibur-connect.component';
+import { TrezorConnectComponent } from './trezor-connect.component';
 import { ExplorerCurrencyPipe } from '../../pipes/explorer-currency.pipe';
 import { AddressesService } from '../../services/addresses.service';
 import { TransactionsService } from '../../services/transactions.service';
@@ -12,8 +12,8 @@ import { Observable } from 'rxjs';
 import { NO_ERRORS_SCHEMA, } from '@angular/core';
 
 describe('ExcaliburConnectComponent', () => {
-  let component: ExcaliburConnectComponent;
-  let fixture: ComponentFixture<ExcaliburConnectComponent>;
+  let component: TrezorConnectComponent;
+  let fixture: ComponentFixture<TrezorConnectComponent>;
 
   const addressesServiceSpy: jasmine.SpyObj<AddressesService> = jasmine
     .createSpyObj('AddressesService', ['getUtxos']);
@@ -28,7 +28,7 @@ describe('ExcaliburConnectComponent', () => {
 
     TestBed.configureTestingModule({
       declarations: [
-        ExcaliburConnectComponent,
+        TrezorConnectComponent,
         ExplorerCurrencyPipe
       ],
       providers: [
@@ -42,7 +42,7 @@ describe('ExcaliburConnectComponent', () => {
   }));
 
   beforeEach(() => {
-    fixture = TestBed.createComponent(ExcaliburConnectComponent);
+    fixture = TestBed.createComponent(TrezorConnectComponent);
     component = fixture.componentInstance;
     fixture.detectChanges();
   });

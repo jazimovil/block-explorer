@@ -6,7 +6,7 @@ import { TransactionComponent } from './components/transaction/transaction.compo
 import { AddressDetailsComponent } from './components/address-details/address-details.component';
 import { BlockComponent } from './components/block/block.component';
 import { MasternodeDetailsComponent } from './components/masternode-details/masternode-details.component';
-import { ExcaliburConnectComponent } from './components/excalibur-connect/excalibur-connect.component';
+import { TrezorConnectComponent } from './components/trezor-connect/trezor-connect.component';
 
 const routes: Routes = [
   { path: '', component: HomeComponent },
@@ -14,7 +14,7 @@ const routes: Routes = [
   { path: 'blocks/:query', component: BlockComponent },
   { path: 'transactions/:txid', component: TransactionComponent },
   { path: 'masternodes/:ip', component: MasternodeDetailsComponent },
-  { path: 'excalibur', component: ExcaliburConnectComponent },
+  { path: 'trezor', component: TrezorConnectComponent },
   { path: '**', redirectTo: '' }
 ];
 
