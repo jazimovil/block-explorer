@@ -1,6 +1,6 @@
 <div class="wrapper">
 
-  <label class="begin">Bitcoin address list</label>
+  <label class="begin">Trezor Wallet</label>
   <div class="begin">
     <tabset>
       <label>Balance {{ satoshiToXsn(getAvailableSatoshis()) | explorerCurrency }}</label>
@@ -22,9 +22,9 @@
           </li>
         </ul>
         <select #selectedAddressType (change) = "refresh()">
-          <option value=44 selected>Legacy</option>
+          <option value=44>Legacy</option>
           <option value=84>Segwit</option>
-          <option value=49>P2shsegwit</option>
+          <option value=49 selected>P2shsegwit</option>
         </select>
         <br>
         <input type="button" value="Add" (click)="generateNextAddress(+selectedAddressType.value)">
