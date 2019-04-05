@@ -11,11 +11,14 @@ import { UTXO } from '../../models/utxo';
 import {
   TrezorAddress,
   getAddressTypeByAddress,
+  getScriptTypeByAddress,
   getAddressTypeByPrefix,
   selectUtxos,
   toTrezorInput,
   toTrezorReferenceTransaction,
-  convertToSatoshis
+  convertToSatoshis,
+  generatePathAddress,
+  ScriptType
 } from '../../trezor/trezor-helper';
 
 @Component({
@@ -78,7 +81,7 @@ export class TrezorConnectComponent implements OnInit {
     const newIdByType = this.trezorAddresses
       .filter(item => getAddressTypeByAddress(item.address) === getAddressTypeByPrefix(addressType))
       .length;
-    const path = `m/${addressType.toString()}'/199'/0'/0/${newIdByType}`;
+    const path = generatePathAddress(addressType, newIdByType);
     this.getTrezorAddress(path)
       .then(this.onTrezorAddressGenerated.bind(this));
   }
@@ -93,14 +96,14 @@ export class TrezorConnectComponent implements OnInit {
     const outputs = [{
       address: destinationAddress,
       amount: satoshis.toString(),
-      script_type: 'PAYTO' + getAddressTypeByAddress(destinationAddress)
+      script_type: getScriptTypeByAddress(destinationAddress, ScriptType.OUTPUT)
     }];
 
     if (generatedInputs.change > 0) {
       outputs.push({
         address: generatedInputs.addressToChange,
         amount: generatedInputs.change.toString(),
-        script_type: 'PAYTO' + getAddressTypeByAddress(generatedInputs.addressToChange)
+        script_type: getScriptTypeByAddress(generatedInputs.addressToChange, ScriptType.OUTPUT)
       });
     }
 

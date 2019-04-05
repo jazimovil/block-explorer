@@ -83,6 +83,9 @@ export class AppComponent implements OnInit {
       'message.loadingLatestBlocks': 'Loading latest blocks...',
       'message.loadingRichestAddresses': 'Loading richest addresses...',
       'message.transactionsNotAvailable': 'The transactions are not available, please try again in some minutes',
+      'messages.invalidScriptType': 'Unknown script type',
+      'messages.invalidAddressType': 'Unknown address type',
+      'messages.invalidNegativeAmount': 'Invalid negative amount',
 
       // error messages
       'error.nothingFound': 'That doesn\'t seem to be a valid address, nor valid block, neither a valid transaction or ip address',

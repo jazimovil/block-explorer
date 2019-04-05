@@ -10,6 +10,11 @@ export class TrezorAddress {
   static P2SHSEGWIT = 'P2SHWITNESS';
 }
 
+export enum ScriptType {
+  INPUT = 'SPEND',
+  OUTPUT = 'PAYTO'
+}
+
 export const getAddressTypeByAddress = (address: string) => {
   switch (address[0]) {
     case 'X': return TrezorAddress.LEGACY;
@@ -18,6 +23,16 @@ export const getAddressTypeByAddress = (address: string) => {
     default: throw new Error('Unknown address type');
   }
 };
+
+export const getScriptTypeByAddress = (address: string, scriptType: ScriptType) => {
+  switch (scriptType) {
+    case ScriptType.INPUT:
+      return ScriptType.INPUT + getAddressTypeByAddress(address);
+    case ScriptType.OUTPUT:
+      return ScriptType.OUTPUT + getAddressTypeByAddress(address);
+    default: throw new Error('Unknown script type');
+  }
+}
 
 export const getAddressTypeByPrefix = (prefix: number) => {
   switch (prefix) {
@@ -93,6 +108,10 @@ export const toTrezorInput = (trezorAddresses: TrezorAddress[], utxo: UTXO) => {
     prev_hash: utxo.txid,
     prev_index: utxo.outputIndex,
     amount: utxo.satoshis.toString(),
-    script_type: 'SPEND' + getAddressTypeByAddress(trezorAddress.address)
+    script_type: getScriptTypeByAddress(trezorAddress.address, ScriptType.INPUT)
   };
+};
+
+export const generatePathAddress = (digit1: number, digit5: number) => {
+  return `m/${digit1}'/199'/0'/0/${digit5}`;
 };
