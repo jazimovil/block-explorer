@@ -139,7 +139,7 @@ describe('selectUtxos', function() {
     expect(case1.utxos[0].outputIndex).toBe(0);
   });
   const case2 = selectUtxos(utxos1, 200000000);
-  it('correct value on invalid case', function() {
+  it('correct value not valid', function() {
     // not enough utxo for current amount
     expect(case2.total).toBe(0);
     expect(case2.utxos.length).toBe(0);
@@ -212,7 +212,7 @@ describe('toTrezorInput', function() {
     txid: '358d8c9c2a8843cce58a7c35158f32213e1725d8c08e35a5b56ff319affe9ac9',
     outputIndex: 1
   };
-  it('correct value', function() {
+  it('correct value not valid', function() {
     expect( () => { toTrezorInput(trezorAddresses1, utxo2); } )
       .toThrow(new Error('Address not found'));
   });
@@ -230,5 +230,27 @@ describe('toTrezorInput', function() {
     expect(case2.prev_index).toBe(1);
     expect(case2.amount).toBe('744409933');
     expect(case2.script_type).toBe('SPENDP2SHWITNESS');
+  });
+  const trezorAddresses3: TrezorAddress[] = [
+    {
+      address: 'xc1quqcensgkx5cmm0c52evefpknd6pghuh606e2ty',
+      path: [ 2147483692, 2147483847, 0, 1, 12],
+      serializedPath: `m/44'/199'/0'/1/12`
+    }
+  ];
+  const utxo3: UTXO = {
+    address: 'xc1quqcensgkx5cmm0c52evefpknd6pghuh606e2ty',
+    satoshis: 144401933,
+    script: '16001401d9fad5dd794980e90a0284d113a2b7c76cafef',
+    txid: '358d8c9c2a8843cce58a7c35158f32213e1725d8c08e35a5b56ff319affe9ac9',
+    outputIndex: 2
+  };
+  const case3 = toTrezorInput(trezorAddresses3, utxo3);
+  it('correct value', function() {
+    expect(case3.address_n).toEqual([ 2147483692, 2147483847, 0, 1, 12]);
+    expect(case3.prev_hash).toBe('358d8c9c2a8843cce58a7c35158f32213e1725d8c08e35a5b56ff319affe9ac9');
+    expect(case3.prev_index).toBe(2);
+    expect(case3.amount).toBe('144401933');
+    expect(case3.script_type).toBe('SPENDWITNESS');
   });
 });
