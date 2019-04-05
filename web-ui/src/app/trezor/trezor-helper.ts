@@ -29,7 +29,10 @@ export const getAddressTypeByPrefix = (prefix: number) => {
 };
 
 export const convertToSatoshis = (xsnAmount: number) => {
-  const splitXSN = xsnAmount.toString().split('.');
+  if (xsnAmount < 0) {
+    throw new Error('Invalid negative amount');
+  }
+  const splitXSN = xsnAmount.toFixed(8).split('.');
   const num = splitXSN[ 0 ];
   const dec = splitXSN.length === 1 ? '' : splitXSN[ 1 ];
   return Number(num + dec.padEnd(8, '0'));
@@ -62,7 +65,7 @@ export const toTrezorReferenceTransaction = (raw: any) => {
 };
 
 export const selectUtxos = (available: UTXO[], satoshis: number) => {
-  return available.reduce((acc, utxo) => {
+  const response = available.reduce((acc, utxo) => {
     if (acc.total >= satoshis) {
       return acc;
     } else {
@@ -72,10 +75,19 @@ export const selectUtxos = (available: UTXO[], satoshis: number) => {
       };
     }
   }, { total: 0, utxos: [] });
+
+  if (response.total < satoshis) {
+    return { total: 0, utxos: [] };
+  } else {
+    return response;
+  }
 };
 
 export const toTrezorInput = (trezorAddresses: TrezorAddress[], utxo: UTXO) => {
   const trezorAddress = trezorAddresses.find(ta => ta.address === utxo.address);
+  if (typeof(trezorAddress) === 'undefined') {
+    throw new Error('Address not found');
+  }
   return {
     address_n: trezorAddress.path,
     prev_hash: utxo.txid,
