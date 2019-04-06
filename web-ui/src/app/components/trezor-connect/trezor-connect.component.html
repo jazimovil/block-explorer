@@ -9,7 +9,8 @@
           <li *ngFor="let item of trezorAddresses">
             <label>Address: {{item.serializedPath}}</label>
             <p *ngIf="isTrezorAddressVerified(item.address) else elseBlock">
-              <label >{{item.address}}</label>
+              <label>{{item.address}}</label><br>
+              <a routerLink="/addresses/{{item.address}}">{{ 'message.more' | translate }}</a>
             </p>
             <ng-template #elseBlock>
               <p>

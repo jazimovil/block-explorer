@@ -86,6 +86,7 @@ export class AppComponent implements OnInit {
       'messages.invalidScriptType': 'Unknown script type',
       'messages.invalidAddressType': 'Unknown address type',
       'messages.invalidNegativeAmount': 'Invalid negative amount',
+      'message.more': 'More',
 
       // error messages
       'error.nothingFound': 'That doesn\'t seem to be a valid address, nor valid block, neither a valid transaction or ip address',
