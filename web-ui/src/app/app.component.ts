@@ -112,6 +112,8 @@ export class AppComponent implements OnInit {
       'label.receiveXSN': 'Receive XSN',
       'label.sendXSN': 'Send XSN',
       'label.tpos': 'TPOS',
+      'label.send': 'Send',
+      'label.resetWallet': 'Reset Wallet',
 
       'label.address': 'Address',
       'label.balance': 'Balance',

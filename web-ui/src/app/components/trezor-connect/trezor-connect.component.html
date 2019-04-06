@@ -54,9 +54,12 @@
         </select><br>
         Comisión:<br>
         <input #commisionXSN type="number" min="0"><br>
-        <input type="button" value="Send" (click)="sendTPOS()">
+        <input type="button" value="{{ 'label.send' | translate }}" (click)="sendTPOS()">
       </tab>
     </tabset>
+    <br>
+    <br>
+    <input type="button" value="{{ 'label.resetWallet' | translate }}" (click)="resetWallet()">
     <br>
   </div>
 </div>

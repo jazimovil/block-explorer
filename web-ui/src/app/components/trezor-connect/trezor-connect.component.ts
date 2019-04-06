@@ -66,7 +66,7 @@ export class TrezorConnectComponent implements OnInit {
     return this.verifiedTrezorAddress.includes(address);
   }
 
-  private onTrezorAddressGenerated(trezorAddress: TrezorAddress) {
+  private onTrezorAddressGenerated(trezorAddress: TrezorAddress)     {
     if (typeof(trezorAddress.address) === 'undefined') {
       return;
     }
@@ -139,6 +139,12 @@ export class TrezorConnectComponent implements OnInit {
         console.log('Fail to verify');
       }
     });
+  }
+
+  resetWallet() {
+    this.trezorRepositoryService.clear();
+    this.trezorAddresses = [];
+    this.verifiedTrezorAddress = [];
   }
 
   private getRefTransactions(txids: string[]): Observable<any[]> {
