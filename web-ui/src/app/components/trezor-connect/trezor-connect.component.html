@@ -6,19 +6,16 @@
       <label>Balance {{ satoshiToXsn(getAvailableSatoshis()) | explorerCurrency }}</label>
       <tab heading="Receive">
         <ul id="addressList">
-          <li *ngFor="let item of trezorAddresses; let i = index">
-            <label>Address #{{i + 1}}:</label>
+          <li *ngFor="let item of trezorAddresses">
+            <label>Address: {{item.serializedPath}}</label>
             <p *ngIf="isTrezorAddressVerified(item.address) else elseBlock">
-              <label >Verified O</label>
+              <label >{{item.address}}</label>
             </p>
             <ng-template #elseBlock>
               <p>
-                <input type="button" value="Verify" (click)="verifyAddress(item)"><br>
-                <label>Not verified X</label>
+                <input type="button" value="{{ 'action.verifyAddress' | translate }}" (click)="verifyAddress(item)"><br>
               </p>
             </ng-template>
-            <p>{{item.address}}</p>
-            <p>{{item.serializedPath}}</p>
           </li>
         </ul>
         <select #selectedAddressType (change) = "refresh()">
