@@ -92,6 +92,7 @@ export class AppComponent implements OnInit {
 
       // actions
       'action.find': 'Find',
+      'action.verifyAddress': 'Show full address',
 
       // labels
       'label.searchField': 'Transaction id, Blockhash, Block number, Address, IP address',
