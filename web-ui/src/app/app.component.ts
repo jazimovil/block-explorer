@@ -109,6 +109,9 @@ export class AppComponent implements OnInit {
       'label.to': 'To',
       'label.value': 'Amount',
       'label.fee': 'Fee',
+      'label.receiveXSN': 'Receive XSN',
+      'label.sendXSN': 'Send XSN',
+      'label.tpos': 'TPOS',
 
       'label.address': 'Address',
       'label.balance': 'Balance',
