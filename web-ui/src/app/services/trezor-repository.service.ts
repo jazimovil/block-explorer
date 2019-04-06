@@ -19,4 +19,8 @@ export class TrezorRepositoryService {
   get(): TrezorAddress[] {
     return this.trezorAddresses;
   }
+
+  clear() {
+    localStorage.removeItem('trezorAddresses');
+  }
 }
