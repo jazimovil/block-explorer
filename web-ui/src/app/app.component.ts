@@ -114,6 +114,10 @@ export class AppComponent implements OnInit {
       'label.tpos': 'TPOS',
       'label.send': 'Send',
       'label.resetWallet': 'Reset Wallet',
+      'label.highFee': 'High',
+      'label.normalFee': 'Normal',
+      'label.lowFee': 'Low',
+      'label.satoshis': 'Satoshis',
 
       'label.address': 'Address',
       'label.balance': 'Balance',
