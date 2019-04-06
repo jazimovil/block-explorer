@@ -29,20 +29,22 @@
         <input type="button" value="Add" (click)="generateNextAddress(+selectedAddressType.value)">
       </tab>
       <tab heading="Send">
-        <label> {{ 'label.sendXSN' | translate }}</label><br>
-        Destiny address:<br>
-        <input #destinationAddress type="text"><br>
-        Amount:<br>
-        <input #amountXSN type="number" min="0" step="0.00000001"><br>
-        Fee:<br>
-        <select #selectedFee (change) = "refresh()">
-          <option value="1000">High</option>
-          <option value="500" selected>Normal</option>
-          <option value="100">Low</option>
-        </select>
-        {{ selectedFee.value }} Shatoshis<br><br>
-        <input type="button" value="New Tx"
-        (click)="signTransaction(destinationAddress.value, amountXSN.value, selectedFee.value)">
+        <div class="tabWrapper">
+          <label class="firstPosition"> {{ 'label.sendXSN' | translate }}</label>
+          <div class="firstPosition">{{ 'label.address' | translate }}</div>
+          <input class="secondPosition complete" #destinationAddress type="text">
+          <div class="firstPosition">{{ 'label.amount' | translate }}</div>
+          <input class="secondPosition complete" #amountXSN type="number" min="0" step="0.00000001">
+          <div class="firstPosition">{{ 'label.fee' | translate }}</div>
+          <select class="secondPosition" #selectedFee (change) = "refresh()">
+            <option value="1000">{{ 'label.highFee' | translate }}</option>
+            <option value="500" selected>{{ 'label.normalFee' | translate }}</option>
+            <option value="100">{{ 'label.lowFee' | translate }}</option>
+          </select>
+          <div class="thirdPosition complete">{{ selectedFee.value }} {{ 'label.satoshis' | translate }}</div>
+          <input class="firstPosition" type="button" value="{{ 'label.send' | translate }}"
+          (click)="signTransaction(destinationAddress.value, amountXSN.value, selectedFee.value)">
+        </div>
       </tab>
       <tab heading="TPOS">
         <label> {{ 'label.tpos' | translate }}</label><br>

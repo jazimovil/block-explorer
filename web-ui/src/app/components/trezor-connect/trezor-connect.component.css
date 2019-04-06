@@ -5,5 +5,23 @@
 }
 
 .begin {
-    grid-column: col-start 2 / span 8;
+    grid-column: col-start 2 / span 6;
+}
+
+.tabWrapper {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr 1fr;
+    grid-gap: 8px;
+}
+.firstPosition {
+    grid-column: 1;
+}
+.secondPosition {
+    grid-column: 2;
+}
+.thirdPosition {
+    grid-column: 3;
+}
+.complete {
+    grid-column: span 2;
 }
