@@ -3,8 +3,9 @@
   <label class="begin">Trezor Wallet</label>
   <div class="begin">
     <tabset>
-      <label>Balance {{ satoshiToXsn(getAvailableSatoshis()) | explorerCurrency }}</label>
+      <label>Balance {{ satoshiToXsn(getAvailableSatoshis()) | explorerCurrency }}</label><br>
       <tab heading="Receive">
+        <label> {{ 'label.receiveXSN' | translate }}</label><br>
         <ul id="addressList">
           <li *ngFor="let item of trezorAddresses">
             <label>Address: {{item.serializedPath}}</label>
@@ -28,6 +29,7 @@
         <input type="button" value="Add" (click)="generateNextAddress(+selectedAddressType.value)">
       </tab>
       <tab heading="Send">
+        <label> {{ 'label.sendXSN' | translate }}</label><br>
         Destiny address:<br>
         <input #destinationAddress type="text"><br>
         Amount:<br>
@@ -43,6 +45,7 @@
         (click)="signTransaction(destinationAddress.value, amountXSN.value, selectedFee.value)">
       </tab>
       <tab heading="TPOS">
+        <label> {{ 'label.tpos' | translate }}</label><br>
         Merchant address:<br>
         <input #merchantAddress type="text"><br>
         MerchantStake address:<br>
