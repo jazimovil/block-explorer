@@ -1,9 +1,9 @@
 export const environment = {
   production: true,
   api: {
-    url: 'https://xsnexplorer.io/api'
+    url: 'http://165.22.150.227/api'
   },
   gtag: {
-    id: 'UA-65008315-3'
+    id: 'UA-OOOOOOOO-3'
   }
 };

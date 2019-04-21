@@ -1,3 +1,3 @@
 export class Config {
-    static currentCurrency = 'XSN';
+    static currentCurrency = 'LCNT';
 }

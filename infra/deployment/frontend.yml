@@ -33,8 +33,8 @@
     - name: Copy the site config
       become: yes
       copy:
-        src: config/xsnexplorer.io
-        dest: /etc/nginx/sites-available/xsnexplorer
+        src: config/lucentexplorer
+        dest: /etc/nginx/sites-available/lucentexplorer
 
     - name: Copy the nginx config
       become: yes
@@ -42,35 +42,35 @@
         src: config/nginx.conf
         dest: /etc/nginx/nginx.conf
 
-    - name: Copy the ssl certificate chain
-      become: yes
-      copy:
-        src: config/ssl/fullchain.pem
-        dest: /etc/letsencrypt/live/xsnexplorer.io/fullchain.pem
-
-    - name: Copy the ssl private key
-      become: yes
-      copy:
-        src: config/ssl/privkey.pem
-        dest: /etc/letsencrypt/live/xsnexplorer.io/privkey.pem
-
-    - name: Copy the ssl nginx config
-      become: yes
-      copy:
-        src: config/ssl/options-ssl-nginx.conf
-        dest: /etc/letsencrypt/options-ssl-nginx.conf
-
-    - name: Copy the ssl-dhparams.pem
-      become: yes
-      copy:
-        src: config/ssl/ssl-dhparams.pem
-        dest: /etc/letsencrypt/ssl-dhparams.pem
+    # - name: Copy the ssl certificate chain
+    #   become: yes
+    #   copy:
+    #     src: config/ssl/fullchain.pem
+    #     dest: /etc/letsencrypt/live/xsnexplorer.io/fullchain.pem
+    #
+    # - name: Copy the ssl private key
+    #   become: yes
+    #   copy:
+    #     src: config/ssl/privkey.pem
+    #     dest: /etc/letsencrypt/live/xsnexplorer.io/privkey.pem
+    #
+    # - name: Copy the ssl nginx config
+    #   become: yes
+    #   copy:
+    #     src: config/ssl/options-ssl-nginx.conf
+    #     dest: /etc/letsencrypt/options-ssl-nginx.conf
+    #
+    # - name: Copy the ssl-dhparams.pem
+    #   become: yes
+    #   copy:
+    #     src: config/ssl/ssl-dhparams.pem
+    #     dest: /etc/letsencrypt/ssl-dhparams.pem
 
     - name: Create the symlink
       become: yes
       file:
-        src: /etc/nginx/sites-available/xsnexplorer
-        dest: /etc/nginx/sites-enabled/xsnexplorer
+        src: /etc/nginx/sites-available/lucentexplorer
+        dest: /etc/nginx/sites-enabled/lucentexplorer
         state: link
 
     - name: Restart nginx

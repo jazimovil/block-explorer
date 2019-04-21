@@ -286,7 +286,7 @@ class XSNServiceRPCImpl @Inject() (
     server
         .post(body)
         .map { response =>
-          val maybe = getResult[Int](response)
+          val maybe = getResult[JsValue](response).map { x => x.map(y => (y \ "total").as[Int])}
           maybe.getOrElse {
             logger.warn(s"Unexpected response from XSN Server, status = ${response.status}, response = ${response.body}")
 

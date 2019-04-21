@@ -1,0 +1,16 @@
+[Unit]
+Description=Lucend Server
+
+[Service]
+Type=simple
+WorkingDirectory=/home/lucent/
+StandardOutput=tty
+StandardError=tty
+User=lucent
+LimitNOFILE=65535
+ExecStart=/home/lucent/app/lucentd
+
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target
