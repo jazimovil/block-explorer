@@ -1,0 +1,14 @@
+const fs = require('fs');
+const f = 'node_modules/@angular-devkit/build-angular/src/angular-cli-files/models/webpack-configs/browser.js';
+
+fs.readFile(f, 'utf8', function (err, data) {
+    if (err) {
+        return console.log(err);
+    }
+    var result = data.replace(/node: false/g, 'node: { buffer: true, events: true, crypto: true, stream: true, util: true, url: true, path: true }');
+
+    console.log('apply ng-cli shims patch');
+    fs.writeFile(f, result, 'utf8', function (err) {
+        if (err) return console.log(err);
+    });
+});
