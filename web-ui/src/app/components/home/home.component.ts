@@ -5,8 +5,12 @@ import buildOutputScript from 'build-output-script';
 import TransportWebUSB from '@ledgerhq/hw-transport-webusb';
 import Btc from '@ledgerhq/hw-app-btc';
 import * as bitcoin from 'bitcoinjs-lib';
-const regtestUtils = require('./_regtest')
-const regtest = regtestUtils.network
+const regtestUtils = require('./_regtest');
+const regtest = regtestUtils.network;
+const {encode: numberToCompactSizeUInt} = require('varuint-bitcoin');
+const {OP_DUP, OP_HASH160, OP_EQUALVERIFY, OP_CHECKSIG, OP_RETURN} = require('bitcoin-ops');
+const bs58check = require('bs58check');
+const addressDecode = address => bs58check.decode(address).slice(1);
 
 const getDevice = async () => {
   const transport = await TransportWebUSB.create();
@@ -33,6 +37,84 @@ const isAvailable = async () => {
     return false;
   }
 };
+
+const checkUInt53 = number => {
+	if (number < 0 || !Number.isSafeInteger(number)) {
+		throw new RangeError('value out of range');
+	}
+};
+
+const numberToUInt64 = number => {
+	checkUInt53(number);
+
+	const buffer = Buffer.alloc(8);
+
+	buffer.writeUInt32LE(number >>> 0, 0);
+	buffer.writeUInt32LE((number / 0x100000000) | 0, 4);
+
+	return buffer;
+};
+
+const generateBuildOutputScript = (outputs) => {
+  let outputScript = [...numberToCompactSizeUInt(outputs.length)];
+
+	for (const {address, value} of outputs) {
+
+    if (value > 0) {
+      const pubKeyHash = addressDecode(address);
+      console.log('pubKeyHash');
+      console.log(pubKeyHash);
+      const scriptPubKey = [
+        OP_DUP,
+        OP_HASH160,
+        pubKeyHash.length,
+        ...pubKeyHash,
+        OP_EQUALVERIFY,
+        OP_CHECKSIG
+      ];
+
+      outputScript = [
+        ...outputScript,
+        ...numberToUInt64(value),
+        ...numberToCompactSizeUInt(scriptPubKey.length),
+        ...scriptPubKey
+      ];
+    } else {
+      // let tp = Buffer.from(address, 'hex');
+      // let tp = new Uint8Array([88, 114, 121, 110]);
+
+// expected: 58 72 79 6e 51 37 71 35 59
+// [88, 114, 121, 110, 81, 55, 113, 53, 89]
+
+// 5896a5b77770b9d8578f2a1f02f4d633c5dbbf
+// 5896a5b77770b9d8578f2a1f02f4d633c5dbbfd7
+// [88, 150, 165, 183, 119, 112, 185, 216, 87, 143, 42, 31, 2, 244, 214, 51, 197, 219, 191, 215]
+      let tp = [
+        34, 88, 114, 121, 110, 81, 55, 113, 53, 89, 114, 118, 68, 78, 50, 99, 71, 117, 82, 53, 119, 107, 114, 120, 82, 86, 118, 54, 107, 69, 90, 111, 70, 67, 78,
+        34, 88, 110, 98, 76, 57, 77, 76, 89, 122, 81, 118, 68, 116, 82, 104, 120, 75, 50, 100, 97, 56, 113, 81, 53, 54, 88, 103, 74, 51, 110, 80, 83, 81, 100,
+        1, 80,
+        65, 32, 158, 127, 193, 26, 198, 136, 164, 117, 75, 119, 10, 172, 245, 58, 255, 231, 190, 97, 74, 104, 240, 126, 71, 80, 3, 214, 150, 151, 116, 124, 15, 35, 104, 141, 169, 154, 185, 175, 179, 29, 176, 59, 127, 251, 115, 45, 67, 27, 164, 30, 210, 170, 121, 232, 167, 223, 76, 249, 4, 2, 85, 61, 95, 98
+      ]
+      const scriptPubKey = [
+        OP_RETURN,
+        ...tp
+      ];
+      // const scriptPubKey = [
+      //   OP_RETURN,
+      //   tp.length,
+      //   ...tp
+      // ];
+      outputScript = [
+        ...outputScript,
+        ...numberToUInt64(value),
+        ...numberToCompactSizeUInt(scriptPubKey.length),
+        ...scriptPubKey
+      ];
+    }
+	}
+
+	return Buffer.from(outputScript).toString('hex');
+}
 
 const createVarint = (value: number) => {
   if (value < 0xfd) {
@@ -76,30 +158,44 @@ const createTransaction = async function(utxos, outputs, opReturn) {
   }));
   const associatedKeysets = utxos.map(utxo => utxo.derivationPath);
   const changePath = undefined;
-  const outputScript = Buffer.from(buildOutputScript(outputs), 'hex'); 
+  
+  const gbos = generateBuildOutputScript([
+    {
+      address: "XrynQ7q5YrvDN2cGuR5wkrxRVv6kEZoFCN",
+      value: 100000000
+    },
+    {
+      address: "5872796e51377135597276444e326347755235776b7278525676366b455a6f46434e586e624c394d4c597a517644745268784b326461387151353658674a336e5053516450209e7fc11ac688a4754b770aacf53affe7be614a68f07e475003d69697747c0f23688da99ab9afb31db03b7ffb732d431ba41ed2aa79e8a7df4cf90402553d5f62",
+      value: 0
+    }
+  ])
+  // Trying #1
+  // const outputScript = Buffer.from(buildOutputScript(outputs), 'hex'); 
   // const outputScript = Buffer.from("01f87b1201000000001976a9148296a5b77770b9d8578f2a1f02f4d633c5dbbfd788ac")
   
-  console.log('outputScript');
-  console.log(outputScript.toString('hex'));
-  console.log('opReturn');
-  console.log(opReturn);
-  let fin = Buffer.alloc(0);
-  fin = Buffer.concat([
-    fin,
-    createVarint(2)
-  ])
-  fin = Buffer.concat([
-    fin,
-    outputScript
-  ]);
-  fin = Buffer.concat([
-    fin,
-    Buffer.from('0'),
-    createVarint(opReturn.length),
-    opReturn
-  ]);
-  console.log('outputScript');
-  console.log(outputScript);
+  // console.log('outputScript');
+  // console.log(outputScript.toString('hex'));
+  // console.log('opReturn');
+  // console.log(opReturn);
+  // let fin = Buffer.alloc(0);
+  // fin = Buffer.concat([
+  //   fin,
+  //   createVarint(2)
+  // ])
+  // fin = Buffer.concat([
+  //   fin,
+  //   outputScript
+  // ]);
+  // fin = Buffer.concat([
+  //   fin,
+  //   Buffer.from('0'),
+  //   createVarint(opReturn.length),
+  //   opReturn
+  // ]);
+  // console.log('outputScript');
+  // console.log(outputScript);
+
+
   const unixtime = Math.floor(Date.now() / 1000);
   const lockTime = (unixtime - 777);
   const sigHashType = undefined;
@@ -112,7 +208,7 @@ const createTransaction = async function(utxos, outputs, opReturn) {
     inputs,
     associatedKeysets,
     changePath,
-    outputScript,
+    gbos,
     lockTime,
     sigHashType,
     segwit,
@@ -139,8 +235,6 @@ const getBufferOpReturn = async () => {
     // const p2pkh = bitcoin.payments.p2pkh({ pubkey: keyPair.publicKey, network: regtest })
 
     // const unspent = await regtestUtils.faucet(p2pkh.address, 2e5)
-
-    
 
     // const txb = new bitcoin.TransactionBuilder(regtest)
     const data = Buffer.from('5872796e51377135597276444e326347755235776b7278525676366b455a6f46434e586e624c394d4c597a517644745268784b326461387151353658674a336e5053516450209e7fc11ac688a4754b770aacf53affe7be614a68f07e475003d69697747c0f23688da99ab9afb31db03b7ffb732d431ba41ed2aa79e8a7df4cf90402553d5f62', 'utf8')
@@ -203,7 +297,7 @@ export class HomeComponent implements OnInit {
       ],
       [
         {
-          address: "XnbL9MLYzQvDtRhxK2da8qQ56XgJ3nPSQd",
+          address: "XrynQ7q5YrvDN2cGuR5wkrxRVv6kEZoFCN",
           value: 17988600
         }
       ],
@@ -213,7 +307,7 @@ export class HomeComponent implements OnInit {
   }
 
   async f() {
-    const x = await getAddress(`44'/384'/0'/0/2`, false);
+    const x = await getAddress(`44'/384'/0'/0/1`, false);
     console.log(x);
   }
 
