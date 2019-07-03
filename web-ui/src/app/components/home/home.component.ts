@@ -1,12 +1,9 @@
 import { Component, OnInit } from '@angular/core';
-
-// import TransportU2F from '@ledgerhq/hw-transport-u2f';
-import buildOutputScript from 'build-output-script';
 import TransportWebUSB from '@ledgerhq/hw-transport-webusb';
-import Btc from '@ledgerhq/hw-app-btc';
-import * as bitcoin from 'bitcoinjs-lib';
-const regtestUtils = require('./_regtest');
-const regtest = regtestUtils.network;
+// import Btc from '@ledgerhq/hw-app-btc';
+import Btc from './../../../../../../../conj/ledgerjs/packages/hw-app-btc';
+
+const Buffer = require('buffer/').Buffer
 const {encode: numberToCompactSizeUInt} = require('varuint-bitcoin');
 const {OP_DUP, OP_HASH160, OP_EQUALVERIFY, OP_CHECKSIG, OP_RETURN} = require('bitcoin-ops');
 const bs58check = require('bs58check');
@@ -14,28 +11,10 @@ const addressDecode = address => bs58check.decode(address).slice(1);
 
 const getDevice = async () => {
   const transport = await TransportWebUSB.create();
-  console.log('transport');
-  console.log(transport);
-
   const ledger = new Btc(transport);
-  console.log('ledger');
-  console.log(ledger);
-
   ledger.close = () => transport.close();
 
   return ledger;
-};
-
-const isAvailable = async () => {
-  const ledger = await getDevice();
-  try {
-    const address = await ledger.getWalletPublicKey(`m/44'/0'/0'/0/0`);
-    await ledger.close();
-    console.log(address);
-    return true;
-  } catch (error) {
-    return false;
-  }
 };
 
 const checkUInt53 = number => {
@@ -48,97 +27,65 @@ const numberToUInt64 = number => {
 	checkUInt53(number);
 
 	const buffer = Buffer.alloc(8);
-
 	buffer.writeUInt32LE(number >>> 0, 0);
-	buffer.writeUInt32LE((number / 0x100000000) | 0, 4);
-
+  buffer.writeUInt32LE((number / 0x100000000) | 0, 4);
+  
 	return buffer;
 };
+
+const hexToByteArray = (hex) => {
+  const byteArray = [];
+  for (let i = 0; i < hex.length; i += 2)
+    byteArray.push(parseInt(hex.substr(i, 2), 16));
+  return byteArray;
+}
+
+const generateScriptPubKey = (address, value) => {
+  let scriptPubKey = [];
+  const isOpReturn = value == 0 && address.length == 268;
+  if (isOpReturn) {
+    const bytesArray = hexToByteArray(address);
+    const tposContract = []
+    .concat([34]).concat(bytesArray.slice(0, 34))
+    .concat([34]).concat(bytesArray.slice(34, 68))
+    .concat([1]).concat(bytesArray.slice(68, 69))
+    .concat([65]).concat(bytesArray.slice(69));
+
+    scriptPubKey = [
+      OP_RETURN,
+      ...tposContract
+    ];
+  } else {
+    const pubKeyHash = addressDecode(address);
+    scriptPubKey = [
+      OP_DUP,
+      OP_HASH160,
+      pubKeyHash.length,
+      ...pubKeyHash,
+      OP_EQUALVERIFY,
+      OP_CHECKSIG
+    ];
+  }
+  return scriptPubKey;
+}
 
 const generateBuildOutputScript = (outputs) => {
   let outputScript = [...numberToCompactSizeUInt(outputs.length)];
 
 	for (const {address, value} of outputs) {
-
-    if (value > 0) {
-      const pubKeyHash = addressDecode(address);
-      console.log('pubKeyHash');
-      console.log(pubKeyHash);
-      const scriptPubKey = [
-        OP_DUP,
-        OP_HASH160,
-        pubKeyHash.length,
-        ...pubKeyHash,
-        OP_EQUALVERIFY,
-        OP_CHECKSIG
-      ];
-
-      outputScript = [
-        ...outputScript,
-        ...numberToUInt64(value),
-        ...numberToCompactSizeUInt(scriptPubKey.length),
-        ...scriptPubKey
-      ];
-    } else {
-      // let tp = Buffer.from(address, 'hex');
-      // let tp = new Uint8Array([88, 114, 121, 110]);
-
-// expected: 58 72 79 6e 51 37 71 35 59
-// [88, 114, 121, 110, 81, 55, 113, 53, 89]
-
-// 5896a5b77770b9d8578f2a1f02f4d633c5dbbf
-// 5896a5b77770b9d8578f2a1f02f4d633c5dbbfd7
-// [88, 150, 165, 183, 119, 112, 185, 216, 87, 143, 42, 31, 2, 244, 214, 51, 197, 219, 191, 215]
-      let tp = [
-        34, 88, 114, 121, 110, 81, 55, 113, 53, 89, 114, 118, 68, 78, 50, 99, 71, 117, 82, 53, 119, 107, 114, 120, 82, 86, 118, 54, 107, 69, 90, 111, 70, 67, 78,
-        34, 88, 110, 98, 76, 57, 77, 76, 89, 122, 81, 118, 68, 116, 82, 104, 120, 75, 50, 100, 97, 56, 113, 81, 53, 54, 88, 103, 74, 51, 110, 80, 83, 81, 100,
-        1, 80,
-        65, 32, 186, 74, 158, 78, 192, 74, 248, 148, 230, 229, 179, 200, 191, 216, 34, 41, 108, 76, 252, 122, 238, 164, 54, 89, 206, 139, 239, 120, 71, 72, 76, 19, 11, 5, 112, 228, 255, 141, 222, 126, 222, 5, 210, 151, 179, 163, 102, 72, 80, 45, 126, 110, 61, 206, 199, 203, 87, 119, 195, 245, 178, 11, 163, 167
-      ]
-      const scriptPubKey = [
-        OP_RETURN,
-        ...tp
-      ];
-      // const scriptPubKey = [
-      //   OP_RETURN,
-      //   tp.length,
-      //   ...tp
-      // ];
-      outputScript = [
-        ...outputScript,
-        ...numberToUInt64(value),
-        ...numberToCompactSizeUInt(scriptPubKey.length),
-        ...scriptPubKey
-      ];
-    }
+    const scriptPubKey = generateScriptPubKey(address, value)
+    outputScript = [
+      ...outputScript,
+      ...numberToUInt64(value),
+      ...numberToCompactSizeUInt(scriptPubKey.length),
+      ...scriptPubKey
+    ];
 	}
 
 	return Buffer.from(outputScript).toString('hex');
 }
 
-const createVarint = (value: number) => {
-  if (value < 0xfd) {
-    const buffer = Buffer.alloc(1);
-    buffer[0] = value;
-    return buffer;
-  }
-  if (value <= 0xffff) {
-    const buffer = Buffer.alloc(3);
-    buffer[0] = 0xfd;
-    buffer[1] = value & 0xff;
-    buffer[2] = (value >> 8) & 0xff;
-    return buffer;
-  }
-  const buffer = Buffer.alloc(5);
-  buffer[0] = 0xfe;
-  buffer[1] = value & 0xff;
-  buffer[2] = (value >> 8) & 0xff;
-  buffer[3] = (value >> 16) & 0xff;
-  buffer[4] = (value >> 24) & 0xff;
-  return buffer;
-}
-
-const createTransaction = async function(utxos, outputs, opReturn) {
+const createTransaction = async (utxos, outputs) => {
   const ledger = await getDevice();
 
   const inputs = await Promise.all(utxos.map(async utxo => {
@@ -159,42 +106,7 @@ const createTransaction = async function(utxos, outputs, opReturn) {
   const associatedKeysets = utxos.map(utxo => utxo.derivationPath);
   const changePath = undefined;
   
-  const gbos = generateBuildOutputScript([
-    {
-      address: "XrynQ7q5YrvDN2cGuR5wkrxRVv6kEZoFCN",
-      value: 100000000
-    },
-    {
-      address: "5872796e51377135597276444e326347755235776b7278525676366b455a6f46434e586e624c394d4c597a517644745268784b326461387151353658674a336e5053516450209e7fc11ac688a4754b770aacf53affe7be614a68f07e475003d69697747c0f23688da99ab9afb31db03b7ffb732d431ba41ed2aa79e8a7df4cf90402553d5f62",
-      value: 0
-    }
-  ])
-  // Trying #1
-  // const outputScript = Buffer.from(buildOutputScript(outputs), 'hex'); 
-  // const outputScript = Buffer.from("01f87b1201000000001976a9148296a5b77770b9d8578f2a1f02f4d633c5dbbfd788ac")
-  
-  // console.log('outputScript');
-  // console.log(outputScript.toString('hex'));
-  // console.log('opReturn');
-  // console.log(opReturn);
-  // let fin = Buffer.alloc(0);
-  // fin = Buffer.concat([
-  //   fin,
-  //   createVarint(2)
-  // ])
-  // fin = Buffer.concat([
-  //   fin,
-  //   outputScript
-  // ]);
-  // fin = Buffer.concat([
-  //   fin,
-  //   Buffer.from('0'),
-  //   createVarint(opReturn.length),
-  //   opReturn
-  // ]);
-  // console.log('outputScript');
-  // console.log(outputScript);
-
+  const formatedOutputs = generateBuildOutputScript(outputs)
 
   const unixtime = Math.floor(Date.now() / 1000);
   const lockTime = (unixtime - 777);
@@ -202,13 +114,13 @@ const createTransaction = async function(utxos, outputs, opReturn) {
   const segwit = undefined;
   const initialTimestamp = undefined;
   const additionals = [];
-  const expiryHeight = undefined; // Buffer.from([0x00, 0x00, 0x00, 0x00]); changed
+  const expiryHeight = undefined;
 
   const transaction = await ledger.createPaymentTransactionNew(
     inputs,
     associatedKeysets,
     changePath,
-    gbos,
+    formatedOutputs,
     lockTime,
     sigHashType,
     segwit,
@@ -230,34 +142,21 @@ const getAddress = async (derivationPath, verify) => {
   return address;
 };
 
-const getBufferOpReturn = async () => {
-  // const keyPair = bitcoin.ECPair.makeRandom({ network: regtest })
-    // const p2pkh = bitcoin.payments.p2pkh({ pubkey: keyPair.publicKey, network: regtest })
+const createTPOSContract = async (bip32, tposAddress, merchantAddress, commission, txidvout) => {
+  const ledger = await getDevice();
 
-    // const unspent = await regtestUtils.faucet(p2pkh.address, 2e5)
-
-    // const txb = new bitcoin.TransactionBuilder(regtest)
-    const data = Buffer.from('5872796e51377135597276444e326347755235776b7278525676366b455a6f46434e586e624c394d4c597a517644745268784b326461387151353658674a336e5053516450209e7fc11ac688a4754b770aacf53affe7be614a68f07e475003d69697747c0f23688da99ab9afb31db03b7ffb732d431ba41ed2aa79e8a7df4cf90402553d5f62', 'utf8')
-    const embed = bitcoin.payments.embed({ data: [data] })
-    console.log('embed:');
-    console.log(embed.output);
-    // txb.addInput("080bab3514f140bc38520878b0bfe2ee827240d9df572dcfe9381f0056b4f114", 0)
-
-    const ledger = await getDevice();
-    const buffSer = await ledger.serializeTransactionOutputs({
-      outputs: [{
-        script: embed.output,
-        amount: Buffer.from('0')
-      }]
-    });
-    console.log('buffSer');
-    console.log(buffSer.toString('hex'));
-    
-    return buffSer;
-    // const t = txb.build().toHex();
-    // console.log('t:');
-    // console.log(t);
-    // build and broadcast to the RegTest network
+  const chunk1 = tposAddress.split('').map(letter => letter.charCodeAt(0).toString(16)).join('');
+  
+  const chunk2 = merchantAddress.split('').map(letter => letter.charCodeAt(0).toString(16)).join('');
+  
+  let chunk3 = commission.toString(16);
+  chunk3 = chunk3.length == 1 ? '0' + chunk3 : chunk3;
+  
+  const response = await ledger.signUtxo(bip32, txidvout);
+  const signature = (response['v'] + 27 + 4).toString(16) + response['r'] + response['s'];
+  const chunk4 = Buffer.from(signature, 'hex').toString('hex');
+  
+  return chunk1 + chunk2 + chunk3 + chunk4;
 }
 
 @Component({
@@ -276,17 +175,10 @@ export class HomeComponent implements OnInit {
   }
 
   connect() {
-    getBufferOpReturn().then((opReturn) => 
-    {
-      console.log('done');
-      this.ft(opReturn).then(() => console.log('done')).catch((err) => console.log(err));
-    }
-    ).catch(err => console.log(err));
-    // this.f().then(() => console.log('done')).catch(err => console.log(err));
-    // this.ft().then(() => console.log('done')).catch((err) => console.log(err));
+    this.createXSNTransaction().then(() => console.log('done')).catch((err) => console.log(err));
   }
   
-  async ft(opReturn) {
+  async createXSNTransaction() {
     const x = await createTransaction(
       [
         {
@@ -298,15 +190,24 @@ export class HomeComponent implements OnInit {
       [
         {
           address: "XrynQ7q5YrvDN2cGuR5wkrxRVv6kEZoFCN",
-          value: 17988600
+          value: 100000000
+        },
+        {
+          address: await createTPOSContract(
+            "44'/384'/0'/0/1",
+            'XrynQ7q5YrvDN2cGuR5wkrxRVv6kEZoFCN',
+            'XnbL9MLYzQvDtRhxK2da8qQ56XgJ3nPSQd',
+            80,
+            '080bab3514f140bc38520878b0bfe2ee827240d9df572dcfe9381f0056b4f114:0'
+          ),
+          value: 0
         }
-      ],
-      opReturn
+      ]
     );
     console.log(x);
   }
 
-  async f() {
+  async getXSNAddress() {
     const x = await getAddress(`44'/384'/0'/0/1`, false);
     console.log(x);
   }
